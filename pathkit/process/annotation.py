@@ -43,9 +43,18 @@ class AnnotationUtils:
         return PathList(target_path)
 
     @staticmethod
-    def parse_xml_file(src_path: str | PathEntry) -> List:
-        """解析xml标注文件"""
+    def parse_xml_file(src_path: str | PathEntry) -> tuple[tuple, List]:
+        """
+            解析xml标注文件
+            width: 宽
+            height: 高
+            parse_list: [xmin, ymin, xmax, ymax, 类名]
+        """
         document = XMLDocument(src_path)
+        size = document.find("size")
+        width = int(size.find("width").text)
+        height = int(size.find("height").text)
+
         parse_list = []
         for node in document.findall("object"):
             name = node.find("name").text
@@ -59,8 +68,13 @@ class AnnotationUtils:
             parse_list.append(
                 [xmin, ymin, xmax, ymax, name]
             )
-        return parse_list
+        return (width, height), parse_list
 
     @staticmethod
-    def rename_xml_label():
-        pass
+    def rename_xml_label(xml_path: str | PathEntry, new_label: str, old_label: str) -> None:
+        """重命名标签"""
+        document = XMLDocument(xml_path)
+        for node in document.findall("object/name"):
+            if node.text == old_label:
+                node.text = new_label
+        document.save(xml_path)
