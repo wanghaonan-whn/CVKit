@@ -76,7 +76,7 @@ class PathEntry:
             raise ValueError("join() requires at least one path segment")
         return cls(Path(*args))
 
-    def joinpath(self, *args: Union[str, Path]) -> "PathEntry":
+    def joinpath(self, *args: Union[str, Path, "PathEntry"]) -> "PathEntry":
         """路径拼接"""
         if not args:
             raise ValueError("joinpath() requires at least one path segment")
