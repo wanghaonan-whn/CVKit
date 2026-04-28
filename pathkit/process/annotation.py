@@ -7,7 +7,7 @@ from pathkit.process.xmldocument import XMLDocument
 
 class AnnotationUtils:
     """
-        XML 工具
+        XML 标签工具
     """
 
     @staticmethod
@@ -22,6 +22,7 @@ class AnnotationUtils:
 
     @staticmethod
     def get_xmls_label_names(xmls_path: str | PathEntry) -> list[str]:
+        """获取标注 XML 文件夹中所有 object/name 文本"""
         xmls_path_list = PathUtils.glob_paths(xmls_path, "*.xml")
         label_names = [
             node.text
@@ -33,7 +34,7 @@ class AnnotationUtils:
 
     @staticmethod
     def get_keyword_with_xml_label(src_path: str, keyword: str, is_recursion: bool = False) -> PathList:
-        """ 关键词查找对应的xml文件 """
+        """关键词查找对应的xml文件"""
         file_paths = PathUtils.get_file_paths_with_suffix(src_path, suffix="xml", is_recursion=is_recursion)
         target_path = []
         for file_path in file_paths:
@@ -42,12 +43,15 @@ class AnnotationUtils:
         return PathList(target_path)
 
     @staticmethod
-    def parse_xml(src_path: str | PathEntry) -> List:
+    def parse_xml_file(src_path: str | PathEntry) -> List:
+        """解析xml标注文件"""
         document = XMLDocument(src_path)
         parse_list = []
         for node in document.findall("object"):
             name = node.find("name").text
             bbox = node.find("bndbox")
+            if bbox is None:
+                raise ValueError("bndbox is None")
             xmin = int(bbox.find("xmin").text)
             ymin = int(bbox.find("ymin").text)
             xmax = int(bbox.find("xmax").text)
@@ -57,12 +61,6 @@ class AnnotationUtils:
             )
         return parse_list
 
-
-if __name__ == "__main__":
-    xmls_path = "/mnt/8T/TF/上拉杆窜出/赛马/datasets/xml"
-    label_name = AnnotationUtils.get_xmls_label_names(xmls_path)
-    keyword = "zjb__<slg>__cuanchu"
-    xml_path_with_keyword = AnnotationUtils.get_keyword_with_xml_label(xmls_path, keyword).to_str()
-    xml_path = "/mnt/8T/TF/上拉杆窜出/赛马/datasets/xml/上拉杆窜出_0__Q63F06F01_20260410_074441_35__C70__16_3_10.xml"
-    parse_doc = AnnotationUtils.parse_xml(xml_path)
-    print(parse_doc)
+    @staticmethod
+    def rename_xml_label():
+        pass
