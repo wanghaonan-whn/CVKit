@@ -57,10 +57,10 @@ class PathList(list):
 class PathEntry:
     """路径语义处理"""
 
-    def __init__(self, path: Union[str, Path, "PathEntry"]):
+    def __init__(self, path: Union[str, Path, "PathEntry"]) -> None:
         self.path = path.path if isinstance(path, PathEntry) else Path(path)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.path)
 
     def __repr__(self) -> str:
