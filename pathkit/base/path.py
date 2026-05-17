@@ -55,7 +55,9 @@ class PathList(list):
 
 
 class PathEntry:
-    """路径语义处理"""
+    """
+        路径语义处理，对 pathlib.Path 类的基本包装
+    """
 
     def __init__(self, path: Union[str, Path, "PathEntry"]):
         self.path = path.path if isinstance(path, PathEntry) else Path(path)
@@ -68,13 +70,6 @@ class PathEntry:
 
     def __fspath__(self) -> str:
         return os.fspath(self.path)
-
-    @classmethod
-    def join(cls, *args: Union[str, Path]) -> "PathEntry":
-        """路径拼接"""
-        if not args:
-            raise ValueError("join() requires at least one path segment")
-        return cls(Path(*args))
 
     def joinpath(self, *args: Union[str, Path]) -> "PathEntry":
         """路径拼接"""
@@ -130,7 +125,6 @@ class PathEntry:
 
     @property
     def parts(self) -> tuple[str, ...]:
-        """ """
         return self.path.parts
 
     @property
