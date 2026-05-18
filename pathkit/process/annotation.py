@@ -11,7 +11,7 @@ class AnnotationUtils:
     """
 
     @staticmethod
-    def get_file_label_names(file_path: str | PathEntry) -> list[str]:
+    def get_xml_label_names(file_path: str | PathEntry) -> list[str]:
         """获取标注 XML 中所有 object/name 文本"""
         document = XMLDocument(file_path)
         return [
@@ -30,7 +30,7 @@ class AnnotationUtils:
             for node in XMLDocument(document).findall("object/name")
             if node.text is not None
         ]
-        return PathList(label_names).unique().to_str()
+        return PathList(label_names).to_str()
 
     @staticmethod
     def get_keyword_with_xml_label(src_path: str, keyword: str, is_recursion: bool = False) -> PathList:
