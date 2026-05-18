@@ -28,6 +28,17 @@ class XMLDocument:
         node = self.find(xpath)
         return node.text if node is not None else None
 
+    def get_labels(self) -> list[str]:
+        """
+            获取所有匹配节点文本
+            xpath: object/name
+        """
+        return [
+            node.text
+            for node in self.findall("object/name")
+            if node.text is not None
+        ]
+
     def get_attr(self, xpath: str, attr_name: str, default: str | None = None) -> str | None:
         """获取节点属性"""
         node = self.find(xpath)
@@ -48,7 +59,7 @@ class XMLDocument:
             node.attrib[attr_name] = value
             return True
         return False
-    
+
     def append_node(self, xpath: str, tag: str, text: str | None = None, attrib: dict[str, str] | None = None) -> bool:
         """在指定节点下追加子节点，成功返回 True，未找到父节点返回 False"""
         parent = self.find(xpath)
@@ -64,7 +75,7 @@ class XMLDocument:
         target = self.find(xpath)
         if target is None:
             return False
-        
+
         for parent in self._root.iter():
             for child in list(parent):
                 if child is target:
@@ -79,3 +90,11 @@ class XMLDocument:
         target = self.path if path is None else (path.path if isinstance(path, PathEntry) else path)
         ET.indent(self._tree, space="  ")
         self._tree.write(target, encoding="utf-8", xml_declaration=True)
+
+
+if "__main__" == __name__:
+    path = PathEntry(
+        r"D:\BaiduNetdiskDownload\Software-v7.5.1-c4180852-20251120\xml\Image00223_02 7c8e51c9-97c0-4886-b8ea-7be5762c0516.xml")
+    path = path.as_posix()
+    xmldoc = XMLDocument(path).get_labels()
+    print(xmldoc)
