@@ -38,7 +38,7 @@ class AnnotationUtils:
         file_paths = PathUtils.get_file_paths_with_suffix(src_path, suffix="xml", is_recursion=is_recursion)
         target_path = []
         for file_path in file_paths:
-            if keyword in AnnotationUtils.get_file_label_names(file_path):
+            if keyword in AnnotationUtils.get_xml_label_names(file_path):
                 target_path.append(file_path)
         return PathList(target_path)
 
@@ -109,8 +109,3 @@ class AnnotationUtils:
             save_txt_path.parent.mkdir(parents=True, exist_ok=True)
             with open(save_txt_path, "w") as f:
                 f.writelines(yolo)
-
-
-if __name__ == "__main__":
-    path = "/mnt/8T/TV/项点/new_动集/转向架/侧视丢失_底部/PS_20260424_TVDS_动集_横向止挡安装螺栓折断或丢失/1.luoshuan-luomu_diushi/xml"
-    AnnotationUtils().save_yolo_txt(path)
