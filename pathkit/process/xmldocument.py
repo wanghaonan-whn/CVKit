@@ -28,17 +28,6 @@ class XMLDocument:
         node = self.find(xpath)
         return node.text if node is not None else None
 
-    def get_labels(self) -> list[str]:
-        """
-            获取所有匹配节点文本
-            xpath: object/name
-        """
-        return [
-            node.text
-            for node in self.findall("object/name")
-            if node.text is not None
-        ]
-
     def get_attr(self, xpath: str, attr_name: str, default: str | None = None) -> str | None:
         """获取节点属性"""
         node = self.find(xpath)
@@ -90,11 +79,3 @@ class XMLDocument:
         target = self.path if path is None else (path.path if isinstance(path, PathEntry) else path)
         ET.indent(self._tree, space="  ")
         self._tree.write(target, encoding="utf-8", xml_declaration=True)
-
-
-if "__main__" == __name__:
-    path = PathEntry(
-        r"D:\BaiduNetdiskDownload\Software-v7.5.1-c4180852-20251120\xml\Image00223_02 7c8e51c9-97c0-4886-b8ea-7be5762c0516.xml")
-    path = path.as_posix()
-    xmldoc = XMLDocument(path).get_labels()
-    print(xmldoc)
