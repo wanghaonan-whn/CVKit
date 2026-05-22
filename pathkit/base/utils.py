@@ -7,17 +7,19 @@ from pathkit.base.path import PathList
 
 
 class PathUtils:
-    """路径扫描和基于后缀的过滤"""
+    """
+        路径工具
+    """
 
     @staticmethod
-    def _ensure_src_path_exists(src_path: str | Path) -> Path:
+    def __ensure_src_path_exists(src_path: str | Path) -> Path:
         path = Path(src_path)
         if not path.exists():
             raise FileNotFoundError(f"Path does not exist: {path}")
         return path
 
     @staticmethod
-    def _collect_paths(iterator: Iterable[Path], on_permission_error: str = "skip") -> PathList:
+    def __collect_paths(iterator: Iterable[Path], on_permission_error: str = "skip") -> PathList:
         try:
             return PathList(list(iterator))
         except PermissionError:
@@ -25,14 +27,19 @@ class PathUtils:
                 return PathList([])
             raise
 
-    # 遍历
+    # 路径匹配
     @staticmethod
-    def iter_paths(src_path: str | Path, is_recursion: bool = False,
-                   on_permission_error: str = "skip") -> PathList:
-        """基础遍历法"""
-        path = PathUtils._ensure_src_path_exists(src_path)
-        iterator = path.rglob("*") if is_recursion else path.glob("*")
-        return PathUtils._collect_paths(iterator, on_permission_error=on_permission_error)
+    def match_paths(
+            src_path: str | Path,
+            pattern: str = "*",
+            is_recursion: bool = False,
+            on_permission_error: str = "skip"
+    ) -> PathList:
+        """获取路径下匹配模式的路径列表"""
+        path = PathUtils.__ensure_src_path_exists(src_path)
+        if is_recursion:
+            return PathUtils.__collect_paths(path.rglob(pattern), on_permission_error=on_permission_error)
+        return PathUtils.__collect_paths(path.glob(pattern), on_permission_error=on_permission_error)
 
     @staticmethod
     def iter_files(src_path: str, is_recursion: bool = False, on_permission_error: str = "skip") -> PathList:
@@ -42,35 +49,22 @@ class PathUtils:
         is_recursion: 是否递归获取子目录下的文件
         on_permission_error: 权限错误处理方式，"skip"表示跳过
         """
-        file_paths = PathUtils.iter_paths(
+        file_paths = PathUtils.match_path(
             src_path,
             is_recursion=is_recursion,
             on_permission_error=on_permission_error,
         )
-        return PathList([file for file in file_paths if file.is_file()])
+        return file_paths.filter_file()
 
     @staticmethod
     def iter_dirs(src_path: str, is_recursion: bool = False, on_permission_error: str = "skip") -> PathList:
         """获取路径下所有目录列表"""
-        dir_paths = PathUtils.iter_paths(
+        dir_paths = PathUtils.match_path(
             src_path,
             is_recursion=is_recursion,
             on_permission_error=on_permission_error,
         )
-        return PathList([file for file in dir_paths if file.is_dir()])
-
-    # 路径匹配
-    @staticmethod
-    def glob_paths(src_path: str | Path, pattern: str, on_permission_error: str = "skip") -> PathList:
-        """获取路径下匹配模式的路径列表"""
-        path = PathUtils._ensure_src_path_exists(src_path)
-        return PathUtils._collect_paths(path.glob(pattern), on_permission_error=on_permission_error)
-
-    @staticmethod
-    def rglob_paths(src_path: str | Path, pattern: str, on_permission_error: str = "skip") -> PathList:
-        """获取路径下匹配模式的路径列表（递归）"""
-        path = PathUtils._ensure_src_path_exists(src_path)
-        return PathUtils._collect_paths(path.rglob(pattern), on_permission_error=on_permission_error)
+        return dir_paths.filter_dir()
 
     @staticmethod
     def filter_name(
@@ -86,7 +80,7 @@ class PathUtils:
             include_dirs: 是否包含文件夹
         """
         if include_dirs:
-            paths = PathUtils.iter_paths(
+            paths = PathUtils.match_path(
                 src_path,
                 is_recursion=is_recursion,
                 on_permission_error=on_permission_error,
@@ -101,20 +95,6 @@ class PathUtils:
             )
             if keyword in item.name
         ])
-
-    @staticmethod
-    def get_file_paths_with_suffix(
-            src_path: str,
-            suffix: str,
-            is_recursion: bool = False,
-            on_permission_error: str = "skip",
-    ) -> PathList:
-        return PathUtils.get_file_paths_with_suffixes(
-            src_path,
-            [suffix],
-            is_recursion,
-            on_permission_error=on_permission_error,
-        )
 
     @staticmethod
     def get_file_paths_with_suffixes(

@@ -4,7 +4,14 @@ from pathlib import Path
 
 
 class PathList(list):
+    """
+        列表路径工具
+    """
+
     def parent(self):
+        """
+            返回列表里所有路径的父目录（去重）
+        """
         parents = [p.parent if isinstance(p, Path) else Path(p).parent for p in self]
         parents = list(dict.fromkeys(parents))  # 保序去重
         return PathList(parents)
@@ -13,6 +20,9 @@ class PathList(list):
         return [str(p) for p in self]
 
     def counter_suffixes(self) -> dict[str, int]:
+        """
+            统计后缀种类和数量
+        """
         counter = Counter()
         for file in self:
             path = file if isinstance(file, Path) else Path(file)
@@ -39,10 +49,13 @@ class PathList(list):
 
     def sort_by_mtime(self, reverse: bool = False) -> "PathList":
         return PathList(
-            sorted(self, key=lambda item: (item if isinstance(item, Path) else Path(item)).stat().st_mtime,
-                   reverse=reverse))
+            sorted(self, key=lambda item: (item if isinstance(item, Path) else Path(item)).stat().st_mtime, reverse=reverse)
+        )
 
     def unique(self) -> "PathList":
+        """
+            去重
+        """
         normalized = []
         seen = set()
         for item in self:
@@ -51,3 +64,10 @@ class PathList(list):
                 seen.add(path)
                 normalized.append(path)
         return PathList(normalized)
+
+
+if __name__ == "__main__":
+    path = PathList(["/mnt/8T/TV/实车/郑州局/4.20和5.9/runs/TVDS_RESULT/SUBMIT_RESULT/111607_50001/check_images/5_1.png",
+                     "/mnt/8T/TV/实车/郑州局/4.20和5.9/runs/TVDS_RESULT/SUBMIT_RESULT/111607_50001/check_images/7_1.png"])
+    print(path.sort_by_mtime())
+    pass

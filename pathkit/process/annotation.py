@@ -26,7 +26,7 @@ class AnnotationUtils:
     @staticmethod
     def get_xmls_label_names(xml_path: str | Path) -> list[str]:
         """获取标注 XML 文件夹中所有 object/name 文本"""
-        xmls_path_list = PathUtils.glob_paths(xml_path, "*.xml")
+        xmls_path_list = PathUtils.match_path(xml_path, "*.xml")
         label_names = [
             node.text
             for document in xmls_path_list
@@ -38,7 +38,7 @@ class AnnotationUtils:
     @staticmethod
     def get_keyword_with_xml_label(src_path: str, keyword: str, is_recursion: bool = False) -> PathList:
         """关键词查找对应的xml文件"""
-        file_paths = PathUtils.get_file_paths_with_suffix(src_path, suffix="xml", is_recursion=is_recursion)
+        file_paths = PathUtils.get_file_paths_with_suffixes(src_path, suffixes=["xml"], is_recursion=is_recursion)
         target_path = []
         for file_path in file_paths:
             if keyword in AnnotationUtils.get_xml_label_names(file_path):
@@ -97,7 +97,7 @@ class AnnotationUtils:
             save_path = Path(xml_path).parent.joinpath("labels")
         else:
             save_path = Path(save_path)
-        xml_path_list = PathUtils.glob_paths(xml_path, "*.xml")
+        xml_path_list = PathUtils.match_path(xml_path, "*.xml")
         class_names = self.get_xmls_label_names(xml_path)
         class_id = {name: i for i, name in enumerate(sorted(set(class_names)))}
 
