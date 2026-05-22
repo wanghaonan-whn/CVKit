@@ -1,8 +1,6 @@
 from __future__ import annotations
-
 from pathlib import Path
 from typing import List
-
 from pathkit.base.path import PathList
 from pathkit.base.utils import PathUtils
 from pathkit.process.xmldocument import XMLDocument
