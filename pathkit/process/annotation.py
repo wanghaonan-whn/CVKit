@@ -1,6 +1,9 @@
+from __future__ import annotations
+
+from pathlib import Path
 from typing import List
 
-from pathkit.base.path import PathEntry, PathList
+from pathkit.base.path import PathList
 from pathkit.base.utils import PathUtils
 from pathkit.process.xmldocument import XMLDocument
 
@@ -11,7 +14,7 @@ class AnnotationUtils:
     """
 
     @staticmethod
-    def get_xml_label_names(file_path: str | PathEntry) -> list[str]:
+    def get_xml_label_names(file_path: str | Path) -> list[str]:
         """获取标注 XML 中所有 object/name 文本"""
         document = XMLDocument(file_path)
         return [
@@ -21,7 +24,7 @@ class AnnotationUtils:
         ]
 
     @staticmethod
-    def get_xmls_label_names(xml_path: str | PathEntry) -> list[str]:
+    def get_xmls_label_names(xml_path: str | Path) -> list[str]:
         """获取标注 XML 文件夹中所有 object/name 文本"""
         xmls_path_list = PathUtils.glob_paths(xml_path, "*.xml")
         label_names = [
@@ -43,7 +46,7 @@ class AnnotationUtils:
         return PathList(target_path)
 
     @staticmethod
-    def parse_xml_file(file_path: str | PathEntry) -> tuple[tuple, List]:
+    def parse_xml_file(file_path: str | Path) -> tuple[tuple, List]:
         """
             解析xml标注文件
             width: 宽
@@ -71,7 +74,7 @@ class AnnotationUtils:
         return (width, height), parse_list
 
     @staticmethod
-    def rename_xml_label(file_path: str | PathEntry, new_label: str, old_label: str) -> None:
+    def rename_xml_label(file_path: str | Path, new_label: str, old_label: str) -> None:
         """重命名标签"""
         document = XMLDocument(file_path)
         for node in document.findall("object/name"):
@@ -89,10 +92,11 @@ class AnnotationUtils:
         bh = (ymax - ymin) / h
         return x, y, bw, bh
 
-    def save_yolo_txt(self, xml_path: str | PathEntry, save_path=None) -> None:
-        xml_path = PathEntry(xml_path)
+    def save_yolo_txt(self, xml_path: str | Path, save_path: str | Path | None = None) -> None:
         if save_path is None:
-            save_path = xml_path.parent.joinpath("labels")
+            save_path = Path(xml_path).parent.joinpath("labels")
+        else:
+            save_path = Path(save_path)
         xml_path_list = PathUtils.glob_paths(xml_path, "*.xml")
         class_names = self.get_xmls_label_names(xml_path)
         class_id = {name: i for i, name in enumerate(sorted(set(class_names)))}

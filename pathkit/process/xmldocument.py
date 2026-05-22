@@ -1,12 +1,12 @@
+from __future__ import annotations
+
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-from pathkit import PathEntry
-
 
 class XMLDocument:
-    def __init__(self, path: str | PathEntry) -> None:
-        self.path = path.path if isinstance(path, PathEntry) else Path(path)
+    def __init__(self, path: str | Path) -> None:
+        self.path = Path(path)
         self._tree = ET.parse(self.path)
         self._root = self._tree.getroot()
 
@@ -74,8 +74,8 @@ class XMLDocument:
             return False
         return False
 
-    def save(self, path: str | PathEntry | None = None) -> None:
+    def save(self, path: str | Path | None = None) -> None:
         """保存 XML 到指定路径，默认覆盖原文件"""
-        target = self.path if path is None else (path.path if isinstance(path, PathEntry) else path)
+        target = self.path if path is None else Path(path)
         ET.indent(self._tree, space="  ")
         self._tree.write(target, encoding="utf-8", xml_declaration=True)

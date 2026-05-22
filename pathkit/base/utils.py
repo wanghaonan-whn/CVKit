@@ -1,14 +1,16 @@
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Iterable
 
-from pathkit.base.path import PathList, PathEntry
+from pathkit.base.path import PathList
 
 
 class PathUtils:
     """路径扫描和基于后缀的过滤"""
 
     @staticmethod
-    def _ensure_src_path_exists(src_path: str | PathEntry) -> Path:
+    def _ensure_src_path_exists(src_path: str | Path) -> Path:
         path = Path(src_path)
         if not path.exists():
             raise FileNotFoundError(f"Path does not exist: {path}")
@@ -25,7 +27,7 @@ class PathUtils:
 
     # 遍历
     @staticmethod
-    def iter_paths(src_path: str | PathEntry, is_recursion: bool = False,
+    def iter_paths(src_path: str | Path, is_recursion: bool = False,
                    on_permission_error: str = "skip") -> PathList:
         """基础遍历法"""
         path = PathUtils._ensure_src_path_exists(src_path)
@@ -59,13 +61,13 @@ class PathUtils:
 
     # 路径匹配
     @staticmethod
-    def glob_paths(src_path: str | PathEntry, pattern: str, on_permission_error: str = "skip") -> PathList:
+    def glob_paths(src_path: str | Path, pattern: str, on_permission_error: str = "skip") -> PathList:
         """获取路径下匹配模式的路径列表"""
         path = PathUtils._ensure_src_path_exists(src_path)
         return PathUtils._collect_paths(path.glob(pattern), on_permission_error=on_permission_error)
 
     @staticmethod
-    def rglob_paths(src_path: str | PathEntry, pattern: str, on_permission_error: str = "skip") -> PathList:
+    def rglob_paths(src_path: str | Path, pattern: str, on_permission_error: str = "skip") -> PathList:
         """获取路径下匹配模式的路径列表（递归）"""
         path = PathUtils._ensure_src_path_exists(src_path)
         return PathUtils._collect_paths(path.rglob(pattern), on_permission_error=on_permission_error)
