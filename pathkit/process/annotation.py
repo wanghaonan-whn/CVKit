@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import json
 from pathlib import Path
 from typing import List
 from pathkit.base.path import PathList
@@ -13,7 +15,7 @@ class AnnotationUtils:
 
     @staticmethod
     def get_xml_label_names(file_path: str | Path) -> list[str]:
-        """获取标注 XML 中所有 object/name 文本"""
+        """获取单个文件标注 XML 中所有 object/name 文本"""
         document = XMLDocument(file_path)
         return [
             node.text
@@ -23,8 +25,8 @@ class AnnotationUtils:
 
     @staticmethod
     def get_xmls_label_names(xml_path: str | Path) -> list[str]:
-        """获取标注 XML 文件夹中所有 object/name 文本"""
-        xmls_path_list = PathUtils.match_path(xml_path, "*.xml")
+        """获取所有标注 XML 文件夹中所有 object/name 文本"""
+        xmls_path_list = PathUtils.match_paths(xml_path, "*.xml")
         label_names = [
             node.text
             for document in xmls_path_list
@@ -90,20 +92,21 @@ class AnnotationUtils:
         bh = (ymax - ymin) / h
         return x, y, bw, bh
 
-    def save_yolo_txt(self, xml_path: str | Path, save_path: str | Path | None = None) -> None:
+    @staticmethod
+    def save_as_yolo(xml_path: str | Path, save_path: str | Path | None = None) -> None:
         if save_path is None:
             save_path = Path(xml_path).parent.joinpath("labels")
         else:
             save_path = Path(save_path)
-        xml_path_list = PathUtils.match_path(xml_path, "*.xml")
-        class_names = self.get_xmls_label_names(xml_path)
+        xml_path_list = PathUtils.match_paths(xml_path, "*.xml")
+        class_names = AnnotationUtils.get_xmls_label_names(xml_path)
         class_id = {name: i for i, name in enumerate(sorted(set(class_names)))}
 
         for file in xml_path_list:
             yolo = []
-            image_size, bboxes = self.parse_xml_file(file)
+            image_size, bboxes = AnnotationUtils.parse_xml_file(file)
             for bbox in bboxes:
-                x, y, bw, bh = self.voc_to_yolo(image_size, bbox)
+                x, y, bw, bh = AnnotationUtils.voc_to_yolo(image_size, bbox)
                 cls_id = class_id[bbox[4]]
                 line = f"{cls_id} {x:.6f} {y:.6f} {bw:.6f} {bh:.6f}\n"
                 yolo.append(line)
@@ -111,3 +114,54 @@ class AnnotationUtils:
             save_txt_path.parent.mkdir(parents=True, exist_ok=True)
             with open(save_txt_path, "w") as f:
                 f.writelines(yolo)
+
+    @staticmethod
+    def save_as_json(
+            xml_path: str | Path,
+            save_path: str | Path | None = None,
+            image_suffix: str = "jpg",
+            shape_type: str = "rectangle"
+    ) -> None:
+        if save_path is None:
+            save_path = Path(xml_path).parent.joinpath("json")
+        else:
+            save_path = Path(save_path)
+        xml_path_list = PathUtils.match_paths(xml_path, "*.xml")
+        for file in xml_path_list:
+            json_content = {
+                "version": "",
+                "flags": {},
+                "checked": False,
+                "shapes": [],
+                "imagePath": f"{file.stem}.{image_suffix}",
+                "imageData": None,
+            }
+            shapes = []
+            image_size, bboxes = AnnotationUtils.parse_xml_file(file)
+            for bbox in bboxes:
+                xmin, ymin, xmax, ymax = bbox[:4]
+                name = bbox[4]
+                label = {
+                    "label": name,
+                    "shape_type": shape_type,
+                    "flags": {},
+                    "points": [
+                        [int(xmin), int(ymin)],
+                        [int(xmax), int(ymin)],
+                        [int(xmax), int(ymax)],
+                        [int(xmin), int(ymax)],
+                    ],
+                    "group_id": None,
+                    "description": None,
+                    "difficult": False,
+                    "attributes": {},
+                }
+                shapes.append(label)
+
+            json_content["shapes"] = shapes
+            json_content["imageHeight"] = image_size[1]
+            json_content["imageWidth"] = image_size[0]
+            save_json_path = save_path / file.stem
+            Path(save_json_path).parent.mkdir(parents=True, exist_ok=True)
+            with open(f"{save_json_path}.json", "w") as f:
+                json.dump(json_content, f, ensure_ascii=False, indent=2)

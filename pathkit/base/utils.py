@@ -42,12 +42,12 @@ class PathUtils:
     @staticmethod
     def iter_files(src_path: str, is_recursion: bool = False, on_permission_error: str = "skip") -> PathList:
         """
-        获取路径下所有文件列表
-        src_path: 目标路径
-        is_recursion: 是否递归获取子目录下的文件
-        on_permission_error: 权限错误处理方式，"skip"表示跳过
+            获取路径下所有文件列表
+            src_path: 目标路径
+            is_recursion: 是否递归获取子目录下的文件
+            on_permission_error: 权限错误处理方式，"skip"表示跳过
         """
-        file_paths = PathUtils.match_path(
+        file_paths = PathUtils.match_paths(
             src_path,
             is_recursion=is_recursion,
             on_permission_error=on_permission_error,
@@ -57,7 +57,7 @@ class PathUtils:
     @staticmethod
     def iter_dirs(src_path: str, is_recursion: bool = False, on_permission_error: str = "skip") -> PathList:
         """获取路径下所有目录列表"""
-        dir_paths = PathUtils.match_path(
+        dir_paths = PathUtils.match_paths(
             src_path,
             is_recursion=is_recursion,
             on_permission_error=on_permission_error,
@@ -78,7 +78,7 @@ class PathUtils:
             include_dirs: 是否包含文件夹
         """
         if include_dirs:
-            paths = PathUtils.match_path(
+            paths = PathUtils.match_paths(
                 src_path,
                 is_recursion=is_recursion,
                 on_permission_error=on_permission_error,
