@@ -120,7 +120,6 @@ class AnnotationUtils:
             xml_path: str | Path,
             save_path: str | Path | None = None,
             image_suffix: str = "jpg",
-            shape_type: str = "rectangle"
     ) -> None:
         if save_path is None:
             save_path = Path(xml_path).parent.joinpath("json")
@@ -143,7 +142,7 @@ class AnnotationUtils:
                 name = bbox[4]
                 label = {
                     "label": name,
-                    "shape_type": shape_type,
+                    "shape_type": "rectangle",
                     "flags": {},
                     "points": [
                         [int(xmin), int(ymin)],

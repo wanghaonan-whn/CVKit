@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 
 def __getattr__(name: str):
-    if name == "AnnotationPathUtils":
+    if name == "AnnotationUtils":
         from pathkit.process.annotation import AnnotationUtils
 
         return AnnotationUtils
