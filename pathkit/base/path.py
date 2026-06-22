@@ -64,10 +64,3 @@ class PathList(list):
                 seen.add(path)
                 normalized.append(path)
         return PathList(normalized)
-
-
-if __name__ == "__main__":
-    path = PathList(["/mnt/8T/TV/实车/郑州局/4.20和5.9/runs/TVDS_RESULT/SUBMIT_RESULT/111607_50001/check_images/5_1.png",
-                     "/mnt/8T/TV/实车/郑州局/4.20和5.9/runs/TVDS_RESULT/SUBMIT_RESULT/111607_50001/check_images/7_1.png"])
-    print(path.sort_by_mtime())
-    pass
