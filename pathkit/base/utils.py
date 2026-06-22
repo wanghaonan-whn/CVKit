@@ -29,18 +29,30 @@ class PathUtils:
     @staticmethod
     def match_paths(
             src_path: str | Path,
-            pattern: str = "*",
+            pattern: str | list[str] | tuple[str, ...] = "*",
             is_recursion: bool = False,
             on_permission_error: str = "skip"
     ) -> PathList:
         """获取路径下匹配模式的路径列表"""
         path = PathUtils.__ensure_src_path_exists(src_path)
-        if is_recursion:
-            return PathUtils.__collect_paths(path.rglob(pattern), on_permission_error=on_permission_error)
-        return PathUtils.__collect_paths(path.glob(pattern), on_permission_error=on_permission_error)
+
+        patterns = [pattern] if isinstance(pattern, str) else pattern
+
+        paths = []
+        for p in patterns:
+            if is_recursion:
+                paths.extend(path.rglob(p))
+            else:
+                paths.extend(path.glob(p))
+        return PathUtils.__collect_paths(paths, on_permission_error=on_permission_error)
 
     @staticmethod
-    def iter_files(src_path: str, pattern: str = "*", is_recursion: bool = False, on_permission_error: str = "skip") -> PathList:
+    def iter_files(
+            src_path: str,
+            pattern: str | list[str] | tuple[str, ...] = "*",
+            is_recursion: bool = False,
+            on_permission_error: str = "skip"
+    ) -> PathList:
         """
             获取路径下所有文件列表
             src_path: 目标路径
@@ -56,7 +68,12 @@ class PathUtils:
         return file_paths.filter_file()
 
     @staticmethod
-    def iter_dirs(src_path: str, pattern: str = "*", is_recursion: bool = False, on_permission_error: str = "skip") -> PathList:
+    def iter_dirs(
+            src_path: str,
+            pattern: str | list[str] | tuple[str, ...] = "*",
+            is_recursion: bool = False,
+            on_permission_error: str = "skip"
+    ) -> PathList:
         """获取路径下所有目录列表"""
         dir_paths = PathUtils.match_paths(
             src_path,
