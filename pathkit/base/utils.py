@@ -40,7 +40,7 @@ class PathUtils:
         return PathUtils.__collect_paths(path.glob(pattern), on_permission_error=on_permission_error)
 
     @staticmethod
-    def iter_files(src_path: str, is_recursion: bool = False, on_permission_error: str = "skip") -> PathList:
+    def iter_files(src_path: str, pattern: str = "*", is_recursion: bool = False, on_permission_error: str = "skip") -> PathList:
         """
             获取路径下所有文件列表
             src_path: 目标路径
@@ -49,16 +49,18 @@ class PathUtils:
         """
         file_paths = PathUtils.match_paths(
             src_path,
+            pattern=pattern,
             is_recursion=is_recursion,
             on_permission_error=on_permission_error,
         )
         return file_paths.filter_file()
 
     @staticmethod
-    def iter_dirs(src_path: str, is_recursion: bool = False, on_permission_error: str = "skip") -> PathList:
+    def iter_dirs(src_path: str, pattern: str = "*", is_recursion: bool = False, on_permission_error: str = "skip") -> PathList:
         """获取路径下所有目录列表"""
         dir_paths = PathUtils.match_paths(
             src_path,
+            pattern=pattern,
             is_recursion=is_recursion,
             on_permission_error=on_permission_error,
         )
