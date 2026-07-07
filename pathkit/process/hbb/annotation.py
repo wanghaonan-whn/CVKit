@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List
 from pathkit.base.path import PathList
 from pathkit.base.utils import PathUtils
-from pathkit.process.xmldocument import XMLDocument
+from pathkit.process.common.xmldocument import XMLDocument
 
 
 class AnnotationUtils:

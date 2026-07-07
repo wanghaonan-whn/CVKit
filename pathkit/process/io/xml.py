@@ -1,11 +1,12 @@
 from __future__ import annotations
 from pathlib import Path
 import xml.etree.ElementTree as ET
+from pathkit.process.io.abc.base import BaseDocument
 
 
-class XMLDocument:
+class XMLDocument(BaseDocument):
     def __init__(self, path: str | Path) -> None:
-        self.path = Path(path)
+        super().__init__(path)
         self._tree = ET.parse(self.path)
         self._root = self._tree.getroot()
 
