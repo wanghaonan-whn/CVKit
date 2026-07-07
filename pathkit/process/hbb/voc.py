@@ -5,10 +5,10 @@ from pathlib import Path
 from typing import List
 from pathkit.base.path import PathList
 from pathkit.base.utils import PathUtils
-from pathkit.process.common.xmldocument import XMLDocument
+from pathkit.process.io.xml import XMLDocument
 
 
-class AnnotationUtils:
+class VOCAnnotationUtils:
     """
         XML 标签工具
     """
@@ -41,7 +41,7 @@ class AnnotationUtils:
         file_paths = PathUtils.get_file_paths_with_suffixes(src_path, suffixes=["xml"], is_recursion=is_recursion)
         target_path = []
         for file_path in file_paths:
-            if keyword in AnnotationUtils.get_xml_label_names(file_path):
+            if keyword in VOCAnnotationUtils.get_xml_label_names(file_path):
                 target_path.append(file_path)
         return PathList(target_path)
 
@@ -99,14 +99,14 @@ class AnnotationUtils:
         else:
             save_path = Path(save_path)
         xml_path_list = PathUtils.match_paths(xml_path, "*.xml")
-        class_names = AnnotationUtils.get_xmls_label_names(xml_path)
+        class_names = VOCAnnotationUtils.get_xmls_label_names(xml_path)
         class_id = {name: i for i, name in enumerate(sorted(set(class_names)))}
 
         for file in xml_path_list:
             yolo = []
-            image_size, bboxes = AnnotationUtils.parse_xml_file(file)
+            image_size, bboxes = VOCAnnotationUtils.parse_xml_file(file)
             for bbox in bboxes:
-                x, y, bw, bh = AnnotationUtils.voc_to_yolo(image_size, bbox)
+                x, y, bw, bh = VOCAnnotationUtils.voc_to_yolo(image_size, bbox)
                 cls_id = class_id[bbox[4]]
                 line = f"{cls_id} {x:.6f} {y:.6f} {bw:.6f} {bh:.6f}\n"
                 yolo.append(line)
@@ -136,7 +136,7 @@ class AnnotationUtils:
                 "imageData": None,
             }
             shapes = []
-            image_size, bboxes = AnnotationUtils.parse_xml_file(file)
+            image_size, bboxes = VOCAnnotationUtils.parse_xml_file(file)
             for bbox in bboxes:
                 xmin, ymin, xmax, ymax = bbox[:4]
                 name = bbox[4]

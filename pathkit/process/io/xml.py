@@ -1,6 +1,7 @@
 from __future__ import annotations
-from pathlib import Path
+
 import xml.etree.ElementTree as ET
+from pathlib import Path
 from pathkit.process.io.abc.base import BaseDocument
 
 
@@ -12,6 +13,24 @@ class XMLDocument(BaseDocument):
 
     def read(self) -> str:
         return ET.tostring(self._root, encoding="unicode")
+
+    def write(self, content: str | ET.Element | ET.ElementTree) -> None:
+        if isinstance(content, ET.ElementTree):
+            self._tree = content
+            self._root = content.getroot()
+
+        elif isinstance(content, ET.Element):
+            self._root = content
+            self._tree = ET.ElementTree(self._root)
+
+        elif isinstance(content, str):
+            self._root = ET.fromstring(content)
+            self._tree = ET.ElementTree(self._root)
+
+        else:
+            raise TypeError(
+                f"Unsupported XML content type: {type(content).__name__}"
+            )
 
     @property
     def root(self) -> ET.Element:
