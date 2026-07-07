@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from pathlib import Path
 
 from pathkit.process.io.abc.base import BaseDocument
@@ -13,9 +14,6 @@ class TXTDocument(BaseDocument):
         with open(str(self.path), "r", encoding="utf-8") as f:
             self.content = f.read()
         return self.content
-
-    def write(self, content: str) -> None:
-        self.content = content
 
     def save(
             self,
