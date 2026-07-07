@@ -15,6 +15,10 @@ class TXTDocument(BaseDocument):
             self.content = f.read()
         return self.content
 
+    def readlines(self) -> list[str]:
+        with open(str(self.path), "r", encoding="utf-8") as f:
+            return f.readlines()
+
     def save(
             self,
             path: str | Path | None = None,
