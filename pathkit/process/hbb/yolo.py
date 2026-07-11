@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections import Counter
+from pathlib import Path
+
 from pathkit.process.io.txt import TXTDocument
 
 
@@ -33,6 +36,7 @@ class YOLOAnnotationUtils(TXTDocument):
         self.save()
 
     def del_cls(self, src_cls: str | int) -> None:
+        """ 删除类别 """
         src_cls = int(src_cls)
 
         new_lines = []
@@ -51,6 +55,21 @@ class YOLOAnnotationUtils(TXTDocument):
             classes.append(int(line.split()[0]))
 
         return set(classes)
+
+    @staticmethod
+    def count_classes(label_dir: str | Path) -> Counter[int]:
+        counter = Counter()
+
+        label_dir = Path(label_dir)
+        label_list = label_dir.glob("*.txt")
+        for txt_file in label_list:
+            with txt_file.open("r", encoding="utf-8") as f:
+                for line in f:
+                    if not line.strip(): continue
+                    cls = int(line.split()[0])
+                    counter[cls] += 1
+
+        return counter
 
 
 if __name__ == "__main__":
