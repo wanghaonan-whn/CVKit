@@ -16,5 +16,5 @@ class BaseDocument(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def save(self, path: str | Path | None = None) -> None:
+    def save(self) -> None:
         raise NotImplementedError

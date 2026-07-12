@@ -6,6 +6,10 @@ from pathkit.process.io.abc.base import BaseDocument
 
 
 class TXTDocument(BaseDocument):
+    """
+        TXT文件类
+    """
+
     def __init__(self, path: str | Path) -> None:
         super().__init__(path)
         self.content = None
@@ -15,24 +19,32 @@ class TXTDocument(BaseDocument):
             self.content = f.read()
         return self.content
 
+    def __str__(self) -> str:
+        return self.content or ""
+
+    def __len__(self) -> int:
+        return len(self.content or "")
+
     def readlines(self) -> list[str]:
-        with open(str(self.path), "r", encoding="utf-8") as f:
+        with open(self.path, "r", encoding="utf-8") as f:
             return f.readlines()
 
-    def save(
-            self,
-            path: str | Path | None = None,
-            force: bool = False,
-    ) -> TXTDocument:
-        save_path = path if path else self.path
-        Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+    def write(self, content: str) -> TXTDocument:
+        self.content = content
+        return self
 
+    def append(self, content: str) -> TXTDocument:
         if self.content is None:
-            if not force:
-                raise ValueError("content is None, call read() or assign content first.")
-            self.content = ""
+            self.read()
+        self.content += content
+        return self
 
-        with open(save_path, "w", encoding="utf-8") as f:
+    def save(self) -> TXTDocument:
+        if self.content is None:
+            raise ValueError("content is None")
+
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.path, "w", encoding="utf-8") as f:
             f.write(self.content)
         return self
 
