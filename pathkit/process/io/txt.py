@@ -23,7 +23,7 @@ class TXTDocument(BaseDocument):
             self,
             path: str | Path | None = None,
             force: bool = False,
-    ) -> None:
+    ) -> TXTDocument:
         save_path = path if path else self.path
         Path(save_path).parent.mkdir(parents=True, exist_ok=True)
 
@@ -34,6 +34,7 @@ class TXTDocument(BaseDocument):
 
         with open(save_path, "w", encoding="utf-8") as f:
             f.write(self.content)
+        return self
 
 
 if __name__ == "__main__":

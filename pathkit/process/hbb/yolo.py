@@ -15,7 +15,7 @@ class YOLOAnnotationUtils(TXTDocument):
         统计类别
     """
 
-    def change_cls(self, src_cls: str | int, dst_cls: str | int) -> None:
+    def change_cls(self, src_cls: str | int, dst_cls: str | int) -> YOLOAnnotationUtils:
         """ 修改类别 """
         src_cls = int(src_cls)
         dst_cls = int(dst_cls)
@@ -34,6 +34,7 @@ class YOLOAnnotationUtils(TXTDocument):
             new_lines.append(" ".join(parts) + "\n")
         self.content = "".join(new_lines)
         self.save()
+        return self
 
     def del_cls(self, src_cls: str | int) -> None:
         """ 删除类别 """
@@ -46,6 +47,19 @@ class YOLOAnnotationUtils(TXTDocument):
             new_lines.append(line)
         self.content = "".join(new_lines)
         self.save()
+
+    def remove_empty(self) -> YOLOAnnotationUtils:
+        readlines = self.readlines()
+        if len(readlines) == 0:
+            self.path.unlink()
+        return self
+
+    def remove_duplicate(self) -> YOLOAnnotationUtils:
+        readlines = self.readlines()
+        unique = list(dict.fromkeys(readlines))
+        self.content = "\n".join(unique)
+        self.save()
+        return self
 
     @staticmethod
     def parse_label_classes(lines: list[str]) -> set:
@@ -74,5 +88,4 @@ class YOLOAnnotationUtils(TXTDocument):
 
 if __name__ == "__main__":
     YOLOAnnotationUtils(
-        r"D:\BaiduNetdiskDownload\Software-v7.5.1-c4180852-20251120\labels\Image00223_02 7c8e51c9-97c0-4886-b8ea-7be5762c0516.txt").del_cls(
-        1)
+        r"D:\BaiduNetdiskDownload\Software-v7.5.1-c4180852-20251120\labels\Image00223_02 7c8e51c9-97c0-4886-b8ea-7be5762c0516.txt")
