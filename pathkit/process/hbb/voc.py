@@ -6,7 +6,7 @@ from typing import List
 
 from pathkit.base.path import PathList
 from pathkit.base.utils import PathUtils
-from pathkit.process.io.xml import XMLDocument
+from pathkit.process.io.xmldoc import XMLDocument
 
 
 class VOCAnnotationUtils:
