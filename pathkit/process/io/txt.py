@@ -50,5 +50,5 @@ class TXTDocument(BaseDocument):
 
 
 if __name__ == "__main__":
-    txtdoc = TXTDocument("/mnt/8T/TF/木地板破损/赛马/From_ldm/datasets2/labels/00000_0000000_Kp7K4i_11_3_11.txt")
-    print(txtdoc.read())
+    txtdoc = TXTDocument(
+        r"D:\BaiduNetdiskDownload\Software-v7.5.1-c4180852-20251120\labels\Image00223_02 7c8e51c9-97c0-4886-b8ea-7be5762c0516.txt")
