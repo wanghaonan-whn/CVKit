@@ -3,9 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import List
+
 from pathkit.base.path import PathList
 from pathkit.base.utils import PathUtils
-from core.annotation.io.xml import XMLDocument
+from pathkit.process.io.xmldoc import XMLDocument
 
 
 class VOCAnnotationUtils:
@@ -14,7 +15,7 @@ class VOCAnnotationUtils:
     """
 
     @staticmethod
-    def get_xml_label_names(file_path: str | Path) -> list[str]:
+    def get_voc_names(file_path: str | Path) -> list[str]:
         """获取单个文件标注 XML 中所有 object/name 文本"""
         document = XMLDocument(file_path)
         return [
@@ -24,7 +25,7 @@ class VOCAnnotationUtils:
         ]
 
     @staticmethod
-    def get_xmls_label_names(xml_path: str | Path) -> list[str]:
+    def get_vocs_names(xml_path: str | Path) -> list[str]:
         """获取所有标注 XML 文件夹中所有 object/name 文本"""
         xmls_path_list = PathUtils.match_paths(xml_path, "*.xml")
         label_names = [
@@ -35,18 +36,17 @@ class VOCAnnotationUtils:
         ]
         return PathList(label_names).to_str()
 
-    @staticmethod
-    def get_keyword_with_xml_label(src_path: str, keyword: str, is_recursion: bool = False) -> PathList:
+    def get_keyword_with_voc(self, src_path: str, keyword: str, is_recursion: bool = False) -> PathList:
         """关键词查找对应的xml文件"""
         file_paths = PathUtils.get_file_paths_with_suffixes(src_path, suffixes=["xml"], is_recursion=is_recursion)
         target_path = []
         for file_path in file_paths:
-            if keyword in VOCAnnotationUtils.get_xml_label_names(file_path):
+            if keyword in self.get_voc_names(file_path):
                 target_path.append(file_path)
         return PathList(target_path)
 
     @staticmethod
-    def parse_xml_file(file_path: str | Path) -> tuple[tuple, List]:
+    def parse_voc_file(file_path: str | Path) -> tuple[tuple, List]:
         """
             解析xml标注文件
             width: 宽
@@ -74,7 +74,7 @@ class VOCAnnotationUtils:
         return (width, height), parse_list
 
     @staticmethod
-    def rename_xml_label(file_path: str | Path, new_label: str, old_label: str) -> None:
+    def rename_voc_label(file_path: str | Path, new_label: str, old_label: str) -> None:
         """重命名标签"""
         document = XMLDocument(file_path)
         for node in document.findall("object/name"):
@@ -92,19 +92,18 @@ class VOCAnnotationUtils:
         bh = (ymax - ymin) / h
         return x, y, bw, bh
 
-    @staticmethod
-    def save_as_yolo(xml_path: str | Path, save_path: str | Path | None = None) -> None:
+    def save_as_yolo(self, xml_path: str | Path, save_path: str | Path | None = None) -> None:
         if save_path is None:
             save_path = Path(xml_path).parent.joinpath("labels")
         else:
             save_path = Path(save_path)
         xml_path_list = PathUtils.match_paths(xml_path, "*.xml")
-        class_names = VOCAnnotationUtils.get_xmls_label_names(xml_path)
+        class_names = self.get_vocs_names(xml_path)
         class_id = {name: i for i, name in enumerate(sorted(set(class_names)))}
 
         for file in xml_path_list:
             yolo = []
-            image_size, bboxes = VOCAnnotationUtils.parse_xml_file(file)
+            image_size, bboxes = VOCAnnotationUtils.parse_voc_file(file)
             for bbox in bboxes:
                 x, y, bw, bh = VOCAnnotationUtils.voc_to_yolo(image_size, bbox)
                 cls_id = class_id[bbox[4]]
@@ -136,7 +135,7 @@ class VOCAnnotationUtils:
                 "imageData": None,
             }
             shapes = []
-            image_size, bboxes = VOCAnnotationUtils.parse_xml_file(file)
+            image_size, bboxes = VOCAnnotationUtils.parse_voc_file(file)
             for bbox in bboxes:
                 xmin, ymin, xmax, ymax = bbox[:4]
                 name = bbox[4]
@@ -164,3 +163,8 @@ class VOCAnnotationUtils:
             Path(save_json_path).parent.mkdir(parents=True, exist_ok=True)
             with open(f"{save_json_path}.json", "w") as f:
                 json.dump(json_content, f, ensure_ascii=False, indent=2)
+
+
+if __name__ == "__main__":
+    vocutils = VOCAnnotationUtils()
+    vocutils.save_as_yolo(r"D:\BaiduNetdiskDownload\Software-v7.5.1-c4180852-20251120\xml")

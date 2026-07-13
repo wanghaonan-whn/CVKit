@@ -8,46 +8,28 @@ from core.annotation.io.abc.base import BaseDocument
 class XMLDocument(BaseDocument):
     def __init__(self, path: str | Path) -> None:
         super().__init__(path)
-        self._tree = ET.parse(self.path)
-        self._root = self._tree.getroot()
+        self.__tree = ET.parse(self.path)
+        self.__root = self.__tree.getroot()
 
     def read(self) -> str:
-        return ET.tostring(self._root, encoding="unicode")
-
-    def write(self, content: str | ET.Element | ET.ElementTree) -> None:
-        if isinstance(content, ET.ElementTree):
-            self._tree = content
-            self._root = content.getroot()
-
-        elif isinstance(content, ET.Element):
-            self._root = content
-            self._tree = ET.ElementTree(self._root)
-
-        elif isinstance(content, str):
-            self._root = ET.fromstring(content)
-            self._tree = ET.ElementTree(self._root)
-
-        else:
-            raise TypeError(
-                f"Unsupported XML content type: {type(content).__name__}"
-            )
+        return ET.tostring(self.__root, encoding="unicode")
 
     @property
     def root(self) -> ET.Element:
-        return self._root
+        return self.__root
 
     def find(self, xpath: str) -> ET.Element | None:
-        return self._root.find(xpath)
+        return self.__root.find(xpath)
 
     def findall(self, xpath: str) -> list[ET.Element]:
-        return self._root.findall(xpath)
+        return self.__root.findall(xpath)
 
-    def get_text(self, xpath: str) -> str | None:
+    def gettext(self, xpath: str) -> str | None:
         """获取节点文本"""
         node = self.find(xpath)
         return node.text if node is not None else None
 
-    def get_attr(self, xpath: str, attr_name: str, default: str | None = None) -> str | None:
+    def getattr(self, xpath: str, attr_name: str, default: str | None = None) -> str | None:
         """获取节点属性"""
         node = self.find(xpath)
         return node.attrib.get(attr_name, default) if node is not None else default
@@ -84,17 +66,21 @@ class XMLDocument(BaseDocument):
         if target is None:
             return False
 
-        for parent in self._root.iter():
+        for parent in self.__root.iter():
             for child in list(parent):
                 if child is target:
                     parent.remove(child)
                     return True
-        if target is self._root:
+        if target is self.__root:
             return False
         return False
 
-    def save(self, path: str | Path | None = None) -> None:
-        """保存 XML 到指定路径，默认覆盖原文件"""
-        target = self.path if path is None else Path(path)
-        ET.indent(self._tree, space="  ")
-        self._tree.write(target, encoding="utf-8", xml_declaration=True)
+    def save(self) -> XMLDocument:
+        ET.indent(self.__tree, space="  ")
+        self.__tree.write(self.path, encoding="utf-8", xml_declaration=True)
+        return self
+
+if __name__ == "__main__":
+    xml_path = r"D:\BaiduNetdiskDownload\Software-v7.5.1-c4180852-20251120\xml\Image00223_02 7c8e51c9-97c0-4886-b8ea-7be5762c0516.xml"
+    xmldoc = XMLDocument(xml_path).root
+    print(xmldoc.text)
