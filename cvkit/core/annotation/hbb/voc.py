@@ -3,57 +3,40 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import List
-
-from cvkit.path.base.path import PathList
-from cvkit.path.base.utils import PathUtils
 from cvkit.core.annotation.io.xmldoc import XMLDocument
 
 
-class VOCAnnotationUtils:
+class VOCAnnotationUtils(XMLDocument):
     """
         XML 标签工具
     """
 
-    @staticmethod
-    def get_voc_names(file_path: str | Path) -> list[str]:
-        """获取单个文件标注 XML 中所有 object/name 文本"""
-        document = XMLDocument(file_path)
+    def __init__(self, path: str | Path) -> None:
+        super().__init__(path)
+
+    def get_voc_names(self) -> list[str]:
+        document = XMLDocument(self.path)
         return [
             node.text
             for node in document.findall("object/name")
             if node.text is not None
         ]
 
-    @staticmethod
-    def get_vocs_names(xml_path: str | Path) -> list[str]:
-        """获取所有标注 XML 文件夹中所有 object/name 文本"""
-        xmls_path_list = PathUtils.match_paths(xml_path, "*.xml")
-        label_names = [
-            node.text
-            for document in xmls_path_list
-            for node in XMLDocument(document).findall("object/name")
-            if node.text is not None
-        ]
-        return PathList(label_names).to_str()
-
-    def get_keyword_with_voc(self, src_path: str, keyword: str, is_recursion: bool = False) -> PathList:
+    def is_label_in_voc(self, keyword: str) -> bool:
         """关键词查找对应的xml文件"""
-        file_paths = PathUtils.get_file_paths_with_suffixes(src_path, suffixes=["xml"], is_recursion=is_recursion)
-        target_path = []
-        for file_path in file_paths:
-            if keyword in self.get_voc_names(file_path):
-                target_path.append(file_path)
-        return PathList(target_path)
+        if keyword in self.get_voc_names():
+            return True
+        else:
+            return False
 
-    @staticmethod
-    def parse_voc_file(file_path: str | Path) -> tuple[tuple, List]:
+    def parse_voc(self) -> tuple[tuple, List]:
         """
             解析xml标注文件
             width: 宽
             height: 高
             parse_list: [xmin, ymin, xmax, ymax, 类名]
         """
-        document = XMLDocument(file_path)
+        document = XMLDocument(self.path)
         size = document.find("size")
         width = int(size.find("width").text)
         height = int(size.find("height").text)
@@ -73,14 +56,14 @@ class VOCAnnotationUtils:
             )
         return (width, height), parse_list
 
-    @staticmethod
-    def rename_voc_label(file_path: str | Path, new_label: str, old_label: str) -> None:
+    def rename_voc_label(self, new_label: str, old_label: str) -> VOCAnnotationUtils:
         """重命名标签"""
-        document = XMLDocument(file_path)
+        document = XMLDocument(self.path)
         for node in document.findall("object/name"):
             if node.text == old_label:
                 node.text = new_label
-        document.save(file_path)
+        document.save()
+        return self
 
     @staticmethod
     def voc_to_yolo(image_size, bbox) -> tuple:
@@ -92,79 +75,79 @@ class VOCAnnotationUtils:
         bh = (ymax - ymin) / h
         return x, y, bw, bh
 
-    def save_as_yolo(self, xml_path: str | Path, save_path: str | Path | None = None) -> None:
+    def save_as_yolo(self, save_path: str | Path | None = None) -> VOCAnnotationUtils:
         if save_path is None:
-            save_path = Path(xml_path).parent.joinpath("labels")
+            save_path = self.path.parent.joinpath("labels")
         else:
             save_path = Path(save_path)
-        xml_path_list = PathUtils.match_paths(xml_path, "*.xml")
-        class_names = self.get_vocs_names(xml_path)
+        class_names = self.get_voc_names()
         class_id = {name: i for i, name in enumerate(sorted(set(class_names)))}
 
-        for file in xml_path_list:
-            yolo = []
-            image_size, bboxes = VOCAnnotationUtils.parse_voc_file(file)
-            for bbox in bboxes:
-                x, y, bw, bh = VOCAnnotationUtils.voc_to_yolo(image_size, bbox)
-                cls_id = class_id[bbox[4]]
-                line = f"{cls_id} {x:.6f} {y:.6f} {bw:.6f} {bh:.6f}\n"
-                yolo.append(line)
-            save_txt_path = save_path.joinpath(file.stem).with_suffix(".txt")
-            save_txt_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(save_txt_path, "w") as f:
-                f.writelines(yolo)
+        yolo = []
+        image_size, bboxes = self.parse_voc()
+        for bbox in bboxes:
+            x, y, bw, bh = VOCAnnotationUtils.voc_to_yolo(image_size, bbox)
+            cls_id = class_id[bbox[4]]
+            line = f"{cls_id} {x:.6f} {y:.6f} {bw:.6f} {bh:.6f}\n"
+            yolo.append(line)
+        save_txt_path = save_path.joinpath(self.path.stem).with_suffix(".txt")
+        save_txt_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(save_txt_path, "w") as f:
+            f.writelines(yolo)
+        return self
 
-    @staticmethod
     def save_as_json(
-            xml_path: str | Path,
+            self,
             save_path: str | Path | None = None,
             image_suffix: str = "jpg",
-    ) -> None:
+    ) -> VOCAnnotationUtils:
         if save_path is None:
-            save_path = Path(xml_path).parent.joinpath("json")
+            save_path = self.path.parent.joinpath("json")
         else:
             save_path = Path(save_path)
-        xml_path_list = PathUtils.match_paths(xml_path, "*.xml")
-        for file in xml_path_list:
-            json_content = {
-                "version": "",
-                "flags": {},
-                "checked": False,
-                "shapes": [],
-                "imagePath": f"{file.stem}.{image_suffix}",
-                "imageData": None,
-            }
-            shapes = []
-            image_size, bboxes = VOCAnnotationUtils.parse_voc_file(file)
-            for bbox in bboxes:
-                xmin, ymin, xmax, ymax = bbox[:4]
-                name = bbox[4]
-                label = {
-                    "label": name,
-                    "shape_type": "rectangle",
-                    "flags": {},
-                    "points": [
-                        [int(xmin), int(ymin)],
-                        [int(xmax), int(ymin)],
-                        [int(xmax), int(ymax)],
-                        [int(xmin), int(ymax)],
-                    ],
-                    "group_id": None,
-                    "description": None,
-                    "difficult": False,
-                    "attributes": {},
-                }
-                shapes.append(label)
 
-            json_content["shapes"] = shapes
-            json_content["imageHeight"] = image_size[1]
-            json_content["imageWidth"] = image_size[0]
-            save_json_path = save_path / file.stem
-            Path(save_json_path).parent.mkdir(parents=True, exist_ok=True)
-            with open(f"{save_json_path}.json", "w") as f:
-                json.dump(json_content, f, ensure_ascii=False, indent=2)
+        json_content = {
+            "version": "",
+            "flags": {},
+            "checked": False,
+            "shapes": [],
+            "imagePath": f"{self.path.stem}.{image_suffix}",
+            "imageData": None,
+        }
+        shapes = []
+        image_size, bboxes = self.parse_voc()
+        for bbox in bboxes:
+            xmin, ymin, xmax, ymax = bbox[:4]
+            name = bbox[4]
+            label = {
+                "label": name,
+                "shape_type": "rectangle",
+                "flags": {},
+                "points": [
+                    [int(xmin), int(ymin)],
+                    [int(xmax), int(ymin)],
+                    [int(xmax), int(ymax)],
+                    [int(xmin), int(ymax)],
+                ],
+                "group_id": None,
+                "description": None,
+                "difficult": False,
+                "attributes": {},
+            }
+            shapes.append(label)
+
+        json_content["shapes"] = shapes
+        json_content["imageHeight"] = image_size[1]
+        json_content["imageWidth"] = image_size[0]
+        save_json_path = save_path / self.path.stem
+        Path(save_json_path).parent.mkdir(parents=True, exist_ok=True)
+        with open(f"{save_json_path}.json", "w") as f:
+            json.dump(json_content, f, ensure_ascii=False, indent=2)
+        return self
 
 
 if __name__ == "__main__":
-    vocutils = VOCAnnotationUtils()
-    vocutils.save_as_yolo(r"D:\BaiduNetdiskDownload\Software-v7.5.1-c4180852-20251120\xml")
+    voc_path = r"D:\datasets\VOCtrainval_11-May-2012\VOCdevkit\VOC2012\Annotations\2007_000027.xml"
+    vocutils = VOCAnnotationUtils(voc_path)
+    name = vocutils.get_voc_names()
+    print(name)
