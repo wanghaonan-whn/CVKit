@@ -50,5 +50,5 @@ class TXTDocument(BaseDocument):
 
 
 if __name__ == "__main__":
-    txtdoc = TXTDocument(
-        r"D:\BaiduNetdiskDownload\Software-v7.5.1-c4180852-20251120\labels\Image00223_02 7c8e51c9-97c0-4886-b8ea-7be5762c0516.txt")
+    txt_path = r"D:\BaiduNetdiskDownload\Software-v7.5.1-c4180852-20251120\labels\Image00223_02 7c8e51c9-97c0-4886-b8ea-7be5762c0516.txt"
+    txtdoc = TXTDocument(txt_path).write("").append("1").save()
