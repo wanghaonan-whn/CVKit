@@ -14,7 +14,7 @@ class VOCAnnotationUtils(XMLDocument):
     def __init__(self, path: str | Path) -> None:
         super().__init__(path)
 
-    def get_voc_names(self) -> list[str]:
+    def get_voc_label_names(self) -> list[str]:
         document = XMLDocument(self.path)
         return [
             node.text
@@ -24,7 +24,7 @@ class VOCAnnotationUtils(XMLDocument):
 
     def is_label_in_voc(self, keyword: str) -> bool:
         """关键词查找对应的xml文件"""
-        if keyword in self.get_voc_names():
+        if keyword in self.get_voc_label_names():
             return True
         else:
             return False
@@ -77,10 +77,10 @@ class VOCAnnotationUtils(XMLDocument):
 
     def save_as_yolo(self, save_path: str | Path | None = None) -> VOCAnnotationUtils:
         if save_path is None:
-            save_path = self.path.parent.joinpath("labels")
+            save_path = self.path.parents[1].joinpath("labels")
         else:
             save_path = Path(save_path)
-        class_names = self.get_voc_names()
+        class_names = self.get_voc_label_names()
         class_id = {name: i for i, name in enumerate(sorted(set(class_names)))}
 
         yolo = []
@@ -102,7 +102,7 @@ class VOCAnnotationUtils(XMLDocument):
             image_suffix: str = "jpg",
     ) -> VOCAnnotationUtils:
         if save_path is None:
-            save_path = self.path.parent.joinpath("json")
+            save_path = self.path.parents[1].joinpath("json")
         else:
             save_path = Path(save_path)
 
@@ -149,5 +149,10 @@ class VOCAnnotationUtils(XMLDocument):
 if __name__ == "__main__":
     voc_path = r"D:\datasets\VOCtrainval_11-May-2012\VOCdevkit\VOC2012\Annotations\2007_000027.xml"
     vocutils = VOCAnnotationUtils(voc_path)
-    name = vocutils.get_voc_names()
-    print(name)
+    name = vocutils.get_voc_label_names()
+    vocutils.save_as_yolo().save_as_json()
+    print(vocutils.parse_voc())
+    print(vocutils.get_voc_label_names())
+    vocutils.rename_voc_label("person1", "person")
+    print(vocutils.get_voc_label_names())
+    print(vocutils.is_label_in_voc("person1"))
