@@ -6,7 +6,7 @@ from typing import List
 
 from cvkit.path.base.path import PathList
 from cvkit.path.base.utils import PathUtils
-from cvkit.core.annotation.io import XMLDocument
+from cvkit.core.annotation.io.xmldoc import XMLDocument
 
 
 class VOCAnnotationUtils:
