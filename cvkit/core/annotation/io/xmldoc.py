@@ -19,6 +19,16 @@ class XMLDocument(BaseDocument):
         return self.__root
 
     def find(self, xpath: str) -> ET.Element | None:
+        """
+            <size>
+                <width>486</width>
+                <height>500</height>
+                <depth>3</depth>
+            </size>
+            Args:
+                xpath: "size/width"
+            Return: Element对象
+        """
         return self.__root.find(xpath)
 
     def findall(self, xpath: str) -> list[ET.Element]:
@@ -30,50 +40,65 @@ class XMLDocument(BaseDocument):
         return node.text if node is not None else None
 
     def getattr(self, xpath: str, attr_name: str, default: str | None = None) -> str | None:
-        """获取节点属性"""
+        """
+            <person id="1001" name="Tom">
+            Args:
+                xpath: "person"
+                attr_name: "id"
+            Returns:
+                1001
+        """
         node = self.find(xpath)
         return node.attrib.get(attr_name, default) if node is not None else default
 
-    def update_text(self, xpath: str, new_value: str) -> bool:
+    def update_text(self, xpath: str, new_value: str) -> XMLDocument:
         """更新节点文本"""
         node = self.find(xpath)
         if node is not None:
             node.text = new_value
-            return True
-        return False
+        else:
+            raise KeyError("Not found node {}".format(xpath))
+        return self
 
-    def update_attr(self, xpath: str, attr_name: str, value: str) -> bool:
+    def update_attr(self, xpath: str, attr_name: str, value: str) -> XMLDocument:
         """更新节点属性"""
         node = self.find(xpath)
         if node is not None:
             node.attrib[attr_name] = value
-            return True
-        return False
+        else:
+            raise KeyError("Not found node {}".format(xpath))
+        return self
 
-    def append_node(self, xpath: str, tag: str, text: str | None = None, attrib: dict[str, str] | None = None) -> bool:
-        """在指定节点下追加子节点，成功返回 True，未找到父节点返回 False"""
+    def append_node(
+            self,
+            xpath: str,
+            tag: str,
+            text: str | None = None,
+            attrib: dict[str, str] | None = None
+    ) -> XMLDocument:
+        """在指定节点下追加子节点"""
         parent = self.find(xpath)
         if parent is None:
-            return False
+            raise KeyError("Not found parent node {}".format(xpath))
         node = ET.Element(tag, attrib or {})
         node.text = text
         parent.append(node)
-        return True
+        return self
 
-    def remove_node(self, xpath: str) -> bool:
+    def remove_node(self, xpath: str) -> XMLDocument:
         """删除匹配节点"""
         target = self.find(xpath)
         if target is None:
-            return False
+            raise KeyError("Not found need removed node {}".format(xpath))
 
         for parent in self.__root.iter():
             for child in list(parent):
                 if child is target:
                     parent.remove(child)
-                    return True
+                    return self
         if target is self.__root:
-            return False
-        return False
+            raise ValueError("You should not remove root node")
+        return self
 
     def save(self) -> XMLDocument:
         ET.indent(self.__tree, space="  ")
@@ -82,6 +107,13 @@ class XMLDocument(BaseDocument):
 
 
 if __name__ == "__main__":
-    xml_path = r"D:\BaiduNetdiskDownload\Software-v7.5.1-c4180852-20251120\xml\Image00223_02 7c8e51c9-97c0-4886-b8ea-7be5762c0516.xml"
-    xmldoc = XMLDocument(xml_path).root
-    print(xmldoc.text)
+    xml_path = r"D:\datasets\VOCtrainval_11-May-2012\VOCdevkit\VOC2012\Annotations\2007_000027.xml"
+    xmldoc = XMLDocument(xml_path)
+    print(xmldoc.root.text)
+    print(xmldoc.read())
+    print(xmldoc.find("size/width").text)
+    print(xmldoc.gettext("size/height"))
+    print(xmldoc.getattr("size", "width"))
+    # print(xmldoc.update_text("a", "1"))
+    # print(xmldoc.append_node("a", "1"))
+    # xmldoc.update_text("size/width", "486").save()
