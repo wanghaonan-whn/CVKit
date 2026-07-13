@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from pathkit.process.io.abc.base import BaseDocument
+from core.annotation.io.abc.base import BaseDocument
 
 
 class XMLDocument(BaseDocument):
