@@ -4,9 +4,9 @@ import json
 from pathlib import Path
 from typing import List
 
-from pathkit.base.path import PathList
-from pathkit.base.utils import PathUtils
-from core.annotation.io import XMLDocument
+from cvkit.path.base.path import PathList
+from cvkit.path.base.utils import PathUtils
+from cvkit.core.annotation.io import XMLDocument
 
 
 class VOCAnnotationUtils:

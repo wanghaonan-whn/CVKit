@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Mapping
 
-from core.annotation.io.txt import TXTDocument
+from cvkit.core.annotation.io.txt import TXTDocument
 
 
 class YOLOAnnotationUtils(TXTDocument):

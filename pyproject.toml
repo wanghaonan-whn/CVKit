@@ -3,16 +3,23 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pathkit"
+name = "cvkit"
 version = "0.0.3"
-description = "A lightweight path toolkit built on top of pathlib."
+description = "A lightweight computer-vision utility toolkit."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Proprietary" }
 authors = [
-    { name = "wanghaonan-whn" }
+    { name = "wanghaonan-whn" },
 ]
-keywords = ["path", "pathlib", "filesystem", "utility", "xml"]
+keywords = [
+    "computer-vision",
+    "annotation",
+    "path",
+    "pathlib",
+    "filesystem",
+    "utility",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -22,6 +29,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Scientific/Engineering :: Image Processing",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: System :: Filesystems",
 ]
@@ -35,7 +44,8 @@ Repository = "https://github.com/wanghaonan-whn/PyPathKit"
 include-package-data = true
 
 [tool.setuptools.packages.find]
-include = ["pathkit", "pathkit.*"]
-
-[tool.setuptools.package-data]
-pathkit = ["py.typed"]
+where = ["."]
+include = [
+    "cvkit",
+    "cvkit.*",
+]

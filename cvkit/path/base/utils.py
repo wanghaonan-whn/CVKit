@@ -1,7 +1,7 @@
 from __future__ import annotations
 from pathlib import Path
 from typing import Iterable
-from pathkit.base.path import PathList
+from cvkit.path.base.path import PathList
 
 
 class PathUtils:
