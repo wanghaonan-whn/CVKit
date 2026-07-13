@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from core.annotation.io.abc.base import BaseDocument
+from pathkit.process.io.abc.base import BaseDocument
 
 
 class TXTDocument(BaseDocument):
