@@ -48,7 +48,7 @@ class PathUtils:
 
     @staticmethod
     def iter_files(
-            src_path: str,
+            src_path: str | Path,
             pattern: str | list[str] | tuple[str, ...] = "*",
             is_recursion: bool = False,
             on_permission_error: str = "skip"
@@ -134,7 +134,7 @@ class PathUtils:
 
     @staticmethod
     def parse_file_with_suffix(
-            src_path: str,
+            src_path: str | Path,
             is_recursion: bool = False,
             include_empty: bool = False,
             on_permission_error: str = "skip",
