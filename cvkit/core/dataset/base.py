@@ -2,6 +2,8 @@ import random
 import shutil
 from pathlib import Path
 
+import cv2
+
 
 class Datasets:
     IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".JPG", ".JPEG", ".PNG")
@@ -9,10 +11,25 @@ class Datasets:
     def __init__(self, data_dir: str | Path, ratio: float = 0.9) -> None:
         self.data_dir = Path(data_dir)
         self.ratio = ratio
-        self.image_dir = None
+        self.image_dir = Path(self.data_dir) / "images"
+        if not 0 < self.ratio < 1:
+            raise ValueError("ratio must be between 0 and 1")
+
+    def check(self) -> "Datasets":
+        """ 检测坏文件 """
+        bad_dir = self.data_dir / "images_bad"
+        image_list = self.image_dir.glob("*")
+        image_list = [image for image in image_list if image.suffix in Datasets.IMAGE_EXTS]
+        for image_file in image_list:
+            image = cv2.imread(str(image_file))
+            if image is None:
+                save_image_path = bad_dir / image_file.name
+                save_image_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(image_file, save_image_path)
+                print(f"Moved: {image_file} -> {save_image_path}")
+        return self
 
     def split(self) -> "Datasets":
-        self.image_dir = Path(self.data_dir) / "images"
         label_dir = Path(self.data_dir) / "labels"
         save_dir = Path(self.data_dir) / "split"
 
@@ -42,7 +59,6 @@ class Datasets:
     def __copy_dataset(self, labels: list[Path], img_save_dir: Path, label_save_dir: Path) -> None:
         for label_file in labels:
             shutil.copy2(label_file, label_save_dir / label_file.name)
-
             stem = label_file.stem
             for ext in Datasets.IMAGE_EXTS:
                 img_file = self.image_dir / f"{stem}{ext}"
@@ -54,4 +70,4 @@ class Datasets:
 
 
 if __name__ == "__main__":
-    Datasets("/mnt/8T/TV/项点/速度传感器安装螺栓折断或丢失/datasets2").split()
+    Datasets("/mnt/8T/TV/项点/速度传感器安装螺栓折断或丢失/datasets2").check()
