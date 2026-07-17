@@ -1,8 +1,8 @@
 import random
 import shutil
-from pathlib import Path
-
 import cv2
+from pathlib import Path
+from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
 
 
 class Datasets:
@@ -16,10 +16,13 @@ class Datasets:
             raise ValueError("ratio must be between 0 and 1")
 
     def check(self) -> "Datasets":
-        """ 检测坏文件 """
+        """
+            1. 检测坏文件
+            2. 检查空标签
+        """
         bad_dir = self.data_dir / "images_bad"
         image_list = self.image_dir.glob("*")
-        image_list = [image for image in image_list if image.suffix in Datasets.IMAGE_EXTS]
+        image_list = [image for image in image_list if image.suffix.lower() in Datasets.IMAGE_EXTS]
         for image_file in image_list:
             image = cv2.imread(str(image_file))
             if image is None:
@@ -27,6 +30,13 @@ class Datasets:
                 save_image_path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.move(image_file, save_image_path)
                 print(f"Moved: {image_file} -> {save_image_path}")
+            label_path = self.data_dir / "labels" / f"{image_file.stem}.txt"
+            if not label_path.exists():
+                print(f"Missing label: {image_file} -> {label_path}")
+                continue
+            is_empty = not any(line.strip() for line in YOLOAnnotationUtils(label_path).readlines())
+            if is_empty:
+                print(f"Empty: {image_file} -> {label_path}")
         return self
 
     def split(self) -> "Datasets":
@@ -60,13 +70,17 @@ class Datasets:
         for label_file in labels:
             shutil.copy2(label_file, label_save_dir / label_file.name)
             stem = label_file.stem
-            for ext in Datasets.IMAGE_EXTS:
-                img_file = self.image_dir / f"{stem}{ext}"
-                if img_file.exists():
-                    shutil.copy2(img_file, img_save_dir / img_file.name)
-                    break
-            else:
+            image_file = next(
+                (
+                    image_file
+                    for image_file in self.image_dir.glob(f"{stem}.*")
+                    if image_file.suffix.lower() in self.IMAGE_EXTS
+                ),
+                None,
+            )
+            if image_file is None:
                 raise FileNotFoundError(f"Image not found: {stem}")
+            shutil.copy2(image_file, img_save_dir / image_file.name)
 
 
 if __name__ == "__main__":
