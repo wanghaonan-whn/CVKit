@@ -1,12 +1,14 @@
 import random
 import shutil
-import cv2
 from pathlib import Path
+
+import cv2
+
 from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
 
 
 class Datasets:
-    IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".JPG", ".JPEG", ".PNG")
+    IMAGE_EXTS = (".jpg", ".jpeg", ".png")
 
     def __init__(self, data_dir: str | Path, ratio: float = 0.9) -> None:
         self.data_dir = Path(data_dir)
@@ -19,6 +21,7 @@ class Datasets:
         """
             1. 检测坏文件
             2. 检查空标签
+            3. 检查孤儿label
         """
         bad_dir = self.data_dir / "images_bad"
         image_list = self.image_dir.glob("*")
@@ -37,6 +40,12 @@ class Datasets:
             is_empty = not any(line.strip() for line in YOLOAnnotationUtils(label_path).readlines())
             if is_empty:
                 print(f"Empty: {image_file} -> {label_path}")
+
+        label_dir = self.data_dir / "labels"
+        for label_file in label_dir.glob("*.txt"):
+            image_file = self.__find_image(label_file.stem)
+            if image_file is None:
+                print(f"Missing image: {label_file}")
         return self
 
     def split(self) -> "Datasets":
@@ -82,6 +91,12 @@ class Datasets:
                 raise FileNotFoundError(f"Image not found: {stem}")
             shutil.copy2(image_file, img_save_dir / image_file.name)
 
-
-if __name__ == "__main__":
-    Datasets("/mnt/8T/TV/项点/速度传感器安装螺栓折断或丢失/datasets2").check()
+    def __find_image(self, stem: str) -> Path | None:
+        return next(
+            (
+                image_file
+                for image_file in self.image_dir.glob(f"{stem}.*")
+                if image_file.suffix.lower() in self.IMAGE_EXTS
+            ),
+            None,
+        )

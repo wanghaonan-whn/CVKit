@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Mapping
+from typing import List
 
 from cvkit.core.annotation.io.txt import TXTDocument
 
@@ -10,6 +11,18 @@ class YOLOAnnotationUtils(TXTDocument):
     """
         YOLO 标签工具类 V1.0
     """
+
+    def parse_label(self) -> tuple[List[List[float]], List[int]]:
+        bboxes = []
+        classes = []
+        for line in self.readlines():
+            parts = line.strip().split()
+            if not parts:
+                continue
+            cls, x, y, w, h = parts
+            bboxes.append([float(x), float(y), float(w), float(h)])
+            classes.append(int(cls))
+        return bboxes, classes
 
     def remap_classes(self, mapping: Mapping[int | str, int | str]) -> YOLOAnnotationUtils:
         """

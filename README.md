@@ -1,4 +1,13 @@
-# pathkit
+﻿# cvkit
+
+A lightweight computer-vision utility toolkit.
+
+## Modules
+
+- `cvkit.core.annotation`: annotation IO and format helpers
+- `cvkit.core.dataset`: dataset utilities
+- `cvkit.augment`: image augmentation utilities
+- `cvkit.ocr`: OCR-related utilities
 
 ## Build Wheel
 
@@ -15,10 +24,3 @@ python -m build --wheel
 ```
 
 After build completes, the wheel file will be generated in `dist/`.
-
-## Error Rules
-
-- query methods such as `exists()` return boolean values
-- filesystem-dependent methods such as `stat()` and `samefile()` raise exceptions when paths do not exist
-- `relative_to()` raises `ValueError` when the target path is not under the base path
-- scanning methods default to `on_permission_error="skip"`

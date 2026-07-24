@@ -1,4 +1,4 @@
-[build-system]
+﻿[build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
@@ -15,9 +15,9 @@ authors = [
 keywords = [
     "computer-vision",
     "annotation",
-    "path",
-    "pathlib",
-    "filesystem",
+    "dataset",
+    "augmentation",
+    "ocr",
     "utility",
 ]
 classifiers = [
@@ -32,13 +32,12 @@ classifiers = [
     "Topic :: Multimedia :: Graphics",
     "Topic :: Scientific/Engineering :: Image Processing",
     "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: System :: Filesystems",
 ]
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/wanghaonan-whn/PyPathKit"
-Repository = "https://github.com/wanghaonan-whn/PyPathKit"
+Homepage = "https://github.com/wanghaonan-whn/cvkit"
+Repository = "https://github.com/wanghaonan-whn/cvkit"
 
 [tool.setuptools]
 include-package-data = true
