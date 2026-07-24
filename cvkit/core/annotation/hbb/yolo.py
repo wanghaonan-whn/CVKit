@@ -94,8 +94,3 @@ class YOLOAnnotationUtils(TXTDocument):
             for line in self.readlines()
             if line.strip()
         )
-
-
-if __name__ == "__main__":
-    txt_path = r"D:\BaiduNetdiskDownload\Software-v7.5.1-c4180852-20251120\labels\Image00223_02 7c8e51c9-97c0-4886-b8ea-7be5762c0516.txt"
-    count = YOLOAnnotationUtils(txt_path).count_classes()
