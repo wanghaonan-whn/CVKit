@@ -177,3 +177,14 @@ class Augmenter:
                     TXTDocument(save_label_path).write(content).save()
 
         return self
+
+
+if __name__ == "__main__":
+    (Augmenter("")
+     .gauss_noise()
+     .blur()
+     .one_of_affine()
+     .image_compression()
+     .brightness()
+     .augment()
+     )
