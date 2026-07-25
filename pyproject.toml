@@ -1,4 +1,4 @@
-﻿[build-system]
+[build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
@@ -36,8 +36,8 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/wanghaonan-whn/cvkit"
-Repository = "https://github.com/wanghaonan-whn/cvkit"
+Homepage = "https://github.com/wanghaonan-whn/CVKit"
+Repository = "https://github.com/wanghaonan-whn/CVKit"
 
 [tool.setuptools]
 include-package-data = true
