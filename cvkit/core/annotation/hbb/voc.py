@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import List
-from cvkit.core.annotation.io.xmldoc import XMLDocument
+from cvkit.core.annotation.io.xmld import XMLDocument
 
 
 class VOCAnnotationUtils(XMLDocument):
