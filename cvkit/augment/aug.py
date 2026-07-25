@@ -1,10 +1,8 @@
 from pathlib import Path
-
-import albumentations as A
-import cv2
-
 from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
 from cvkit.core.annotation.io.txt import TXTDocument
+import albumentations as A
+import cv2
 
 
 class Augmenter:
@@ -29,32 +27,23 @@ class Augmenter:
         if bbox:
             return A.Compose(
                 self.__transforms,
-                bbox_params=A.BboxParams(
-                    format="yolo",
-                    label_fields=["labels"]
-                )
+                bbox_params=A.BboxParams(format="yolo", label_fields=["labels"])
             )
 
         return A.Compose(self.__transforms)
 
     def horizontal_flip(self, p=0.5) -> "Augmenter":
         """ 左右翻转 """
-        self.__transforms.append(
-            A.HorizontalFlip(p=p)
-        )
+        self.__transforms.append(A.HorizontalFlip(p=p))
         return self
 
     def vertical_flip(self, p=0.5) -> "Augmenter":
         """ 上下翻转 """
-        self.__transforms.append(
-            A.VerticalFlip(p=p)
-        )
+        self.__transforms.append(A.VerticalFlip(p=p))
         return self
 
     def rotate(self, limit=15, p=0.5) -> "Augmenter":
-        self.__transforms.append(
-            A.Rotate(limit=limit, p=p)
-        )
+        self.__transforms.append(A.Rotate(limit=limit, p=p))
         return self
 
     def brightness(self, brightness_limit=0.2, contrast_limit=0.2, p=0.5) -> "Augmenter":
@@ -88,23 +77,41 @@ class Augmenter:
                     - int，例如 ``3``。
                     - tuple，例如 ``(3, 7)``。
         """
+        self.__transforms.append(A.Blur(blur_limit=blur_limit, p=p))
+        return self
+
+    def gauss_noise(self, std_range=(0.03, 0.08), p=0.5) -> "Augmenter":
+        self.__transforms.append(A.GaussNoise(std_range=std_range, p=p))
+        return self
+
+    def image_compression(self, quality_range=(40, 100), p=0.8) -> "Augmenter":
+        self.__transforms.append(A.ImageCompression(quality_range=quality_range, p=p))
+        return self
+
+    def clahe(self, clip_limit=4.0, tile_grid_size=(8, 8), p=0.5):
         self.__transforms.append(
-            A.Blur(
-                blur_limit=blur_limit,
-                p=p
+            A.CLAHE(
+                clip_limit=clip_limit,
+                tile_grid_size=tile_grid_size,
+                p=p,
             )
         )
         return self
 
-    def gauss_noise(self, std_range=(0.03, 0.08), p=0.5) -> "Augmenter":
-        self.__transforms.append(
-            A.GaussNoise(std_range=std_range, p=p),
-        )
+    def motion_blur(self, blur_limit=5, p=0.3):
+        self.__transforms.append(A.MotionBlur(blur_limit=blur_limit, p=p))
         return self
 
-    def image_compression(self, quality_range=(40, 100), p=0.8) -> "Augmenter":
+    def one_of_sharp_blur(self, p=0.4):
         self.__transforms.append(
-            A.ImageCompression(quality_range=quality_range, p=p)
+            A.OneOf(
+                [
+                    A.Sharpen(p=1),
+                    A.Blur(blur_limit=3, p=1),
+                    A.MotionBlur(blur_limit=5, p=1),
+                ],
+                p=p,
+            )
         )
         return self
 
@@ -180,11 +187,12 @@ class Augmenter:
 
 
 if __name__ == "__main__":
-    (Augmenter("")
-     .gauss_noise()
-     .blur()
-     .one_of_affine()
-     .image_compression()
-     .brightness()
-     .augment()
-     )
+    (
+        Augmenter(dataset_path, repeat=3)
+        .brightness(brightness_limit=0.15, contrast_limit=0.2, p=0.5)
+        .gauss_noise(std_range=(0.02, 0.06), p=0.4)
+        .one_of_sharp_blur(p=0.3)
+        .one_of_affine(x_scale=(0.95, 1.05), y_scale=(0.95, 1.05), p=0.3)
+        .image_compression(quality_range=(60, 100), p=0.3)
+        .augment()
+    )
