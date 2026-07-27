@@ -1,9 +1,7 @@
 import random
 import shutil
-from pathlib import Path
-
 import cv2
-
+from pathlib import Path
 from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
 
 
@@ -100,3 +98,7 @@ class Datasets:
             ),
             None,
         )
+
+
+if __name__ == "__main__":
+    Datasets("").split()

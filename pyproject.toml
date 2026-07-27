@@ -33,7 +33,10 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Image Processing",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-dependencies = []
+dependencies = [
+    "albumentations",
+    "opencv-python"
+]
 
 [project.urls]
 Homepage = "https://github.com/wanghaonan-whn/CVKit"

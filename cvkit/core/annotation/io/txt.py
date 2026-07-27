@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 from pathlib import Path
-
 from cvkit.core.annotation.io.abc.base import BaseDocument
 
 
@@ -39,12 +37,13 @@ class TXTDocument(BaseDocument):
         self.content += content
         return self
 
-    def save(self) -> TXTDocument:
+    def save(self, save_path: str | Path | None = None) -> TXTDocument:
         if self.content is None:
             raise ValueError("content is None")
 
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.path, "w", encoding="utf-8") as f:
+        path = Path(save_path) if save_path is not None else self.path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
             f.write(self.content)
         return self
 
