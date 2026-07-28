@@ -13,9 +13,15 @@ class MaskImageUtils(ImageIO):
             cls: int | str = 0,
             erase_num: int = 0,
     ) -> None:
+        """
+        :param image_path:
+        :param label_path:
+        :param cls: 擦除类别
+        :param erase_num: 擦除个数
+        """
         super().__init__(image_path)
         self.erase_num = erase_num
-        self.label_path = label_path
+        self.label_path = Path(label_path)
         self.cls = int(cls)
         if self.erase_num < 0:
             raise ValueError("erase_num must be >= 0")
@@ -25,10 +31,14 @@ class MaskImageUtils(ImageIO):
         lines = TXTDocument(self.label_path).readlines()
         if len(lines) == 0:
             raise ValueError("label_path must contain at least one line")
+
+        polygons = []
         for line in lines:
             values = line.strip().split()
+            if int(values[0]) != self.cls:
+                continue
             if len(values) < 7:
-                raise ValueError(f"At least 7 lines in label_path: {self.label_path}")
+                raise ValueError(f"At least 7 words in label_path: {self.label_path}")
             if (len(values) - 1) % 2 != 0:
                 raise ValueError(f"label num must oushu")
 
@@ -40,9 +50,15 @@ class MaskImageUtils(ImageIO):
             coordinates[:, 0] = np.clip(coordinates[:, 0], 0, self.width - 1)
             coordinates[:, 1] = np.clip(coordinates[:, 1], 0, self.height - 1)
 
-            polygon = np.rint(coordinates).astype(np.int32)
-            cv2.fillPoly(mask, [polygon], 255)
+            polygons.append(np.rint(coordinates).astype(np.int32))
 
-        save_path = self.path.parents[1] / "mask" / self.path.name
-        self.save(mask, save_path)
+        if self.erase_num > len(polygons):
+            raise ValueError(f"erase_num={self.erase_num} 超过标注数量 {len(polygons)}")
+        rng = np.random.default_rng()
+        selected_indices = rng.choice(len(polygons), size=self.erase_num, replace=False)
+        for index in selected_indices:
+            cv2.fillPoly(mask, [polygons[index]], 255)
+
+        save_path = self.path.parents[1] / "mask" / f"{self.path.stem}.png"
+        super().save(mask, save_path)
         return self
