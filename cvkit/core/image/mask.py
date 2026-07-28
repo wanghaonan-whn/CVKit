@@ -9,7 +9,7 @@ class MaskImageUtils(ImageIO):
     def __init__(
             self,
             image_path: str | Path,
-            label_path: str | Path,
+            label_path: str | Path | None = None,
             cls: int | str = 0,
             erase_num: int = 0,
     ) -> None:
@@ -21,10 +21,22 @@ class MaskImageUtils(ImageIO):
         """
         super().__init__(image_path)
         self.erase_num = erase_num
-        self.label_path = Path(label_path)
+        self.label_path = Path(label_path) if label_path else None
         self.cls = int(cls)
         if self.erase_num < 0:
             raise ValueError("erase_num must be >= 0")
+
+    def find_largest_bbox(self) -> tuple[int, int, int, int] | None:
+        mask_bin = ImageIO(self.path).read().image
+        mask_bin = cv2.cvtColor(mask_bin, cv2.COLOR_BGR2GRAY)
+        contours, _ = cv2.findContours(mask_bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if len(contours) == 0:
+            return None
+        max_cnt = max(contours, key=cv2.contourArea)
+        x, y, w, h = cv2.boundingRect(max_cnt)
+        xmin, ymin = x, y
+        xmax, ymax = x + w, y + h
+        return xmin, ymin, xmax, ymax
 
     def generate_from_seg(self) -> "MaskImageUtils":
         mask = np.zeros((self.height, self.width), dtype=np.uint8)
@@ -39,7 +51,7 @@ class MaskImageUtils(ImageIO):
             if len(values) < 7:
                 raise ValueError(f"At least 7 words in label_path: {self.label_path}")
             if (len(values) - 1) % 2 != 0:
-                raise ValueError(f"label num must oushu")
+                raise ValueError(f"label num must OuShu")
 
             coordinates = np.asarray(values[1:], dtype=np.float32).reshape(-1, 2)
 
@@ -99,3 +111,7 @@ class MaskImageUtils(ImageIO):
         save_path = self.path.parents[1] / "mask" / f"{self.path.stem}.png"
         super().save(mask, save_path)
         return self
+
+
+if __name__ == "__main__":
+    pass

@@ -42,7 +42,3 @@ class YOLOSegmentationUtils(TXTDocument):
         self.write(self.content)
         return self
 
-
-if __name__ == "__main__":
-    path = "/mnt/8T/TV/项点/test/labels/HSBK_成昆线成都上行_CR200J1A_20250324_160448_13_merge_10_1_徐培源.txt"
-    YOLOSegmentationUtils(path).polygon_2_bbox().save("/mnt/8T/TV/项点/test/labels_1/HSBK_成昆线成都上行_CR200J1A_20250324_160448_13_merge_10_1_徐培源.txt")

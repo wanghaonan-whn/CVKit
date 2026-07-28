@@ -16,5 +16,5 @@ class BaseImage(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def save(self) -> None:
+    def save(self) -> Any:
         raise NotImplementedError

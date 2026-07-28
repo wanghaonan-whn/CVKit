@@ -11,14 +11,10 @@ class VOCAnnotationUtils(XMLDocument):
         XML 标签工具
     """
 
-    def __init__(self, path: str | Path) -> None:
-        super().__init__(path)
-
     def get_voc_label_names(self) -> list[str]:
-        document = XMLDocument(self.path)
         return [
             node.text
-            for node in document.findall("object/name")
+            for node in self.findall("object/name")
             if node.text is not None
         ]
 
@@ -56,13 +52,48 @@ class VOCAnnotationUtils(XMLDocument):
             )
         return (width, height), parse_list
 
+    @classmethod
+    def build_annotation(
+            cls, img_name: str, img_size: tuple[int, int], bbox: tuple[int, int, int, int],
+            save_path: str | Path, class_name: str = "object", depth: int = 1,
+    ) -> "VOCAnnotationUtils":
+        width, height = img_size
+        xmin, ymin, xmax, ymax = bbox
+        document = cls.create(save_path, root_tag="annotation")
+        (
+            document
+            .append_node(".", "folder", text="images")
+            .append_node(".", "filename", text=Path(img_name).name)
+            .append_node(".", "path", text=img_name)
+            .append_node(".", "source")
+            .append_node("source", "database", text="Unknown")
+            .append_node(".", "size")
+            .append_node("size", "width", text=str(width))
+            .append_node("size", "height", text=str(height))
+            .append_node("size", "depth", text=str(depth))
+            .append_node(".", "segmented", text="0")
+            .append_node(".", "object")
+            .append_node("object", "name", text=class_name)
+            .append_node("object", "pose", text="Unspecified")
+            .append_node("object", "truncated", text="0")
+            .append_node("object", "difficult", text="0")
+
+            # add bndbox
+            .append_node("object", "bndbox")
+            .append_node("object/bndbox", "xmin", text=str(xmin))
+            .append_node("object/bndbox", "ymin", text=str(ymin))
+            .append_node("object/bndbox", "xmax", text=str(xmax))
+            .append_node("object/bndbox", "ymax", text=str(ymax))
+            .save()
+        )
+        return document
+
     def rename_voc_label(self, new_label: str, old_label: str) -> VOCAnnotationUtils:
         """重命名标签"""
-        document = XMLDocument(self.path)
-        for node in document.findall("object/name"):
+        for node in self.findall("object/name"):
             if node.text == old_label:
                 node.text = new_label
-        document.save()
+        super().save()
         return self
 
     @staticmethod
@@ -147,12 +178,13 @@ class VOCAnnotationUtils(XMLDocument):
 
 
 if __name__ == "__main__":
-    voc_path = r"D:\datasets\VOCtrainval_11-May-2012\VOCdevkit\VOC2012\Annotations\2007_000027.xml"
-    vocutils = VOCAnnotationUtils(voc_path)
-    name = vocutils.get_voc_label_names()
-    vocutils.save_as_yolo().save_as_json()
-    print(vocutils.parse_voc())
-    print(vocutils.get_voc_label_names())
-    vocutils.rename_voc_label("person1", "person")
-    print(vocutils.get_voc_label_names())
-    print(vocutils.is_label_in_voc("person1"))
+    # voc_path = r"D:\datasets\VOCtrainval_11-May-2012\VOCdevkit\VOC2012\Annotations\2007_000027.xml"
+    # vocutils = VOCAnnotationUtils(voc_path)
+    # name = vocutils.get_voc_label_names()
+    # vocutils.save_as_yolo().save_as_json()
+    # print(vocutils.parse_voc())
+    # print(vocutils.get_voc_label_names())
+    # vocutils.rename_voc_label("person1", "person")
+    # print(vocutils.get_voc_label_names())
+    # print(vocutils.is_label_in_voc("person1"))
+    VOCAnnotationUtils.build_annotation("1.jpg", (100, 100), (2, 3, 4, 5), "./1.xml").save()

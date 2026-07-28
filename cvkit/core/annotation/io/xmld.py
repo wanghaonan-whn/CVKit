@@ -6,10 +6,18 @@ from cvkit.core.annotation.io.abc.base import BaseDocument
 
 
 class XMLDocument(BaseDocument):
-    def __init__(self, path: str | Path) -> None:
+    def __init__(self, path: str | Path, root_tag: str | None = None) -> None:
         super().__init__(path)
-        self.__tree = ET.parse(self.path)
-        self.__root = self.__tree.getroot()
+        if root_tag is None:
+            self.__tree = ET.parse(self.path)
+            self.__root = self.__tree.getroot()
+        else:
+            self.__root = ET.Element(root_tag)
+            self.__tree = ET.ElementTree(self.__root)
+
+    @classmethod
+    def create(cls, path: str | Path, root_tag: str = "root"):
+        return cls(path, root_tag=root_tag)
 
     def read(self) -> str:
         return ET.tostring(self.__root, encoding="unicode")
@@ -107,13 +115,15 @@ class XMLDocument(BaseDocument):
 
 
 if __name__ == "__main__":
-    xml_path = r"D:\datasets\VOCtrainval_11-May-2012\VOCdevkit\VOC2012\Annotations\2007_000027.xml"
-    xmldoc = XMLDocument(xml_path)
-    print(xmldoc.root.text)
-    print(xmldoc.read())
-    print(xmldoc.find("size/width").text)
-    print(xmldoc.gettext("size/height"))
-    print(xmldoc.getattr("size", "width"))
+    # xml_path = r"D:\datasets\VOCtrainval_11-May-2012\VOCdevkit\VOC2012\Annotations\2007_000027.xml"
+    # xmldoc = XMLDocument(xml_path)
+    # print(xmldoc.root.text)
+    # print(xmldoc.read())
+    # print(xmldoc.find("size/width").text)
+    # print(xmldoc.gettext("size/height"))
+    # print(xmldoc.getattr("size", "width"))
     # print(xmldoc.update_text("a", "1"))
     # print(xmldoc.append_node("a", "1"))
     # xmldoc.update_text("size/width", "486").save()
+    xml_path2 = "./1.xml"
+    XMLDocument.create(xml_path2).save()
