@@ -101,11 +101,15 @@ class Augmenter:
         )
         return self
 
-    def motion_blur(self, blur_limit=5, p=0.3):
+    def to_gray(self) -> "Augmenter":
+        self.__transforms.append(A.ToGray(p=0.2))
+        return self
+
+    def motion_blur(self, blur_limit=5, p=0.3) -> "Augmenter":
         self.__transforms.append(A.MotionBlur(blur_limit=blur_limit, p=p))
         return self
 
-    def one_of_sharp_blur(self, p=0.4):
+    def one_of_sharp_blur(self, p=0.4) -> "Augmenter":
         self.__transforms.append(
             A.OneOf(
                 [
