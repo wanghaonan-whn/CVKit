@@ -30,7 +30,7 @@ class MaskImageUtils(ImageIO):
         if self.erase_num < 0:
             raise ValueError("erase_num must be >= 0")
 
-    def save_largest_bbox(self, class_name: str = "object") -> "MaskImageUtils":
+    def save_largest_bbox(self, class_name: str = "object"):
         mask_bin = self.image
         save_dir = self.path.parents[1] / "cachu"
         contours, _ = cv2.findContours(mask_bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -54,18 +54,18 @@ class MaskImageUtils(ImageIO):
         )
         return self
 
-    def expand_mask(self, dilate_kernel_size: int) -> "MaskImageUtils":
+    def expand_mask(self, dilate_kernel_size: int):
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (dilate_kernel_size, dilate_kernel_size))
         self.image = cv2.dilate(self.image, kernel, iterations=1)
         return self
 
-    def repair(self) -> "MaskImageUtils":
+    def repair(self):
         source = Image.fromarray(self.ori_image)
         mask = Image.fromarray(self.image).convert("L")
         self.image = SimpleLama()(source, mask)
         return self
 
-    def generate_from_seg(self) -> "MaskImageUtils":
+    def generate_from_seg(self):
         mask = np.zeros((self.height, self.width), dtype=np.uint8)
         lines = TXTDocument(self.label_path).readlines()
         if len(lines) == 0:
@@ -102,7 +102,7 @@ class MaskImageUtils(ImageIO):
         super().save(mask, save_path)
         return self
 
-    def generate_from_hbb(self) -> "MaskImageUtils":
+    def generate_from_hbb(self):
         mask = np.zeros((self.height, self.width), dtype=np.uint8)
         lines = TXTDocument(self.label_path).readlines()
         if len(lines) == 0:
