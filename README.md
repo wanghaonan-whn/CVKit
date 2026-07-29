@@ -97,7 +97,7 @@ lines = document.readlines()
 导入：
 
 ```python
-from cvkit.core.annotation.io.xmld import XMLDocument
+from cvkit.core.annotation.io.xmlio import XMLDocument
 ```
 
 ### 打开已有 XML

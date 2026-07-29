@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing_extensions import Self
 from cvkit.core.annotation.io.abc.base import BaseDocument
 
 
@@ -108,8 +109,9 @@ class XMLDocument(BaseDocument):
             raise ValueError("You should not remove root node")
         return self
 
-    def save(self) -> XMLDocument:
-        ET.indent(self.__tree, space="  ")
+    def save(self) -> Self:
+        ET.indent(self.__tree, space="    ")
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         self.__tree.write(self.path, encoding="utf-8", xml_declaration=True)
         return self
 

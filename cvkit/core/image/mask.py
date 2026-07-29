@@ -1,17 +1,19 @@
 import cv2
 import numpy as np
 from pathlib import Path
+from PIL import Image
+from cvkit.core.annotation.hbb.voc import VOCAnnotationUtils
 from cvkit.core.annotation.io.txt import TXTDocument
 from cvkit.core.image.io import ImageIO
+from simple_lama_inpainting import SimpleLama
 
 
 class MaskImageUtils(ImageIO):
     def __init__(
             self,
             image_path: str | Path,
-            label_path: str | Path | None = None,
-            cls: int | str = 0,
             erase_num: int = 0,
+            cls: int | str = 0,
     ) -> None:
         """
         :param image_path:
@@ -20,23 +22,48 @@ class MaskImageUtils(ImageIO):
         :param erase_num: 擦除个数
         """
         super().__init__(image_path)
+        self.ori_image = self.read().image
+        self.ori_image = cv2.cvtColor(self.ori_image, cv2.COLOR_BGR2RGB)
         self.erase_num = erase_num
-        self.label_path = Path(label_path) if label_path else None
+        self.label_path = Path(image_path).parents[1] / "labels" / f"{Path(image_path).stem}.txt"
         self.cls = int(cls)
         if self.erase_num < 0:
             raise ValueError("erase_num must be >= 0")
 
-    def find_largest_bbox(self) -> tuple[int, int, int, int] | None:
-        mask_bin = ImageIO(self.path).read().image
-        mask_bin = cv2.cvtColor(mask_bin, cv2.COLOR_BGR2GRAY)
+    def save_largest_bbox(self, class_name: str = "object") -> "MaskImageUtils":
+        mask_bin = self.image
+        save_dir = self.path.parents[1] / "cachu"
         contours, _ = cv2.findContours(mask_bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if len(contours) == 0:
-            return None
+            raise ValueError("contours == 0")
         max_cnt = max(contours, key=cv2.contourArea)
         x, y, w, h = cv2.boundingRect(max_cnt)
         xmin, ymin = x, y
         xmax, ymax = x + w, y + h
-        return xmin, ymin, xmax, ymax
+        height, width = self.ori_image.shape[:2]
+        (
+            VOCAnnotationUtils
+            .build_annotation(
+                f"{self.path.stem}.png",
+                (width, height),
+                (xmin, ymin, xmax, ymax),
+                save_dir / "xml" / f"{self.path.stem}.xml",
+                class_name,
+            )
+            .save_as_yolo(save_dir / "labels")
+        )
+        return self
+
+    def expand_mask(self, dilate_kernel_size: int) -> "MaskImageUtils":
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (dilate_kernel_size, dilate_kernel_size))
+        self.image = cv2.dilate(self.image, kernel, iterations=1)
+        return self
+
+    def repair(self) -> "MaskImageUtils":
+        source = Image.fromarray(self.ori_image)
+        mask = Image.fromarray(self.image).convert("L")
+        self.image = SimpleLama()(source, mask)
+        return self
 
     def generate_from_seg(self) -> "MaskImageUtils":
         mask = np.zeros((self.height, self.width), dtype=np.uint8)
@@ -70,6 +97,7 @@ class MaskImageUtils(ImageIO):
         for index in selected_indices:
             cv2.fillPoly(mask, [polygons[index]], 255)
 
+        self.image = mask
         save_path = self.path.parents[1] / "mask" / f"{self.path.stem}.png"
         super().save(mask, save_path)
         return self
@@ -108,10 +136,22 @@ class MaskImageUtils(ImageIO):
             top_left, bottom_right = bboxes[index]
             cv2.rectangle(mask, top_left, bottom_right, color=255, thickness=-1)
 
+        self.image = mask
         save_path = self.path.parents[1] / "mask" / f"{self.path.stem}.png"
         super().save(mask, save_path)
         return self
 
 
 if __name__ == "__main__":
-    pass
+    image_path = Path("/mnt/FourT/test/images/1.jpg")
+    root = image_path.parents[1]
+    result_path = root / "cachu" / "images" / f"{image_path.stem}.png"
+
+    (
+        MaskImageUtils(image_path, erase_num=1)
+        .generate_from_hbb()
+        .save_largest_bbox()
+        .expand_mask(1)
+        .repair()
+        .save(save_path=result_path)
+    )

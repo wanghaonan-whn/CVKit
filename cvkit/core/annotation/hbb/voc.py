@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import List
-from cvkit.core.annotation.io.xmld import XMLDocument
+from cvkit.core.annotation.io.xmlio import XMLDocument
 
 
 class VOCAnnotationUtils(XMLDocument):
@@ -32,13 +32,12 @@ class VOCAnnotationUtils(XMLDocument):
             height: 高
             parse_list: [xmin, ymin, xmax, ymax, 类名]
         """
-        document = XMLDocument(self.path)
-        size = document.find("size")
+        size = self.find("size")
         width = int(size.find("width").text)
         height = int(size.find("height").text)
 
         parse_list = []
-        for node in document.findall("object"):
+        for node in self.findall("object"):
             name = node.find("name").text
             bbox = node.find("bndbox")
             if bbox is None:
@@ -84,7 +83,6 @@ class VOCAnnotationUtils(XMLDocument):
             .append_node("object/bndbox", "ymin", text=str(ymin))
             .append_node("object/bndbox", "xmax", text=str(xmax))
             .append_node("object/bndbox", "ymax", text=str(ymax))
-            .save()
         )
         return document
 
