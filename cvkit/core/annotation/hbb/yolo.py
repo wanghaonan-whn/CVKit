@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Mapping
 from typing import List
-
 from cvkit.core.annotation.io.txt import TXTDocument
 
 
@@ -56,7 +55,7 @@ class YOLOAnnotationUtils(TXTDocument):
         self.save()
         return self
 
-    def del_cls(self, src_cls: str | int) -> TXTDocument:
+    def del_cls(self, src_cls: str | int) -> YOLOAnnotationUtils:
         """ 删除类别 """
         src_cls = int(src_cls)
 

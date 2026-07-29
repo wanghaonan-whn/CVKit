@@ -174,7 +174,7 @@ class Augmenter:
         transform = self.build(bbox=True)
 
         for index in range(self.repeat):
-            augmented = transform(image=image, bboxes=bboxes, labels=labels, )
+            augmented = transform(image=image, bboxes=bboxes, labels=labels)
             save_stem = f"{image_path.stem}-aug{index}"
             save_image_path = self.save_image_dir / f"{save_stem}{image_path.suffix}"
             save_label_path = self.save_label_dir / f"{save_stem}.txt"
