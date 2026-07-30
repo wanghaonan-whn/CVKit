@@ -1,8 +1,8 @@
 # cvkit
 
-`cvkit` 是一个面向计算机视觉数据处理的轻量工具库，提供图像读写、TXT/XML
-文档操作、YOLO/VOC 标注处理、数据集检查与划分、二值 mask 生成，以及基于
-Albumentations 的数据增强。
+`cvkit` 是一个面向计算机视觉数据处理的轻量 Python 工具库，提供图像读写、
+TXT/XML 文档操作、YOLO/VOC 标注处理、数据集检查与划分、二值 mask 生成与
+图像修复，以及基于 Albumentations 的数据增强。当前版本为 `0.0.3`。
 
 ## 环境要求
 
@@ -11,10 +11,19 @@ Albumentations 的数据增强。
 - OpenCV Headless 4.9.0.80+
 - Albumentations 2.x
 
-在项目根目录安装：
+在项目根目录安装开发版本：
 
 ```bash
 python -m pip install -e .
+```
+
+`MaskImageUtils` 的图像修复功能还依赖
+[`simple-lama-inpainting`](https://pypi.org/project/simple-lama-inpainting/)。
+该依赖目前未写入 `pyproject.toml`，使用 mask 模块前需要在同一 Python 或 Conda
+环境中额外安装：
+
+```bash
+python -m pip install simple-lama-inpainting
 ```
 
 ## 功能概览
@@ -28,7 +37,7 @@ python -m pip install -e .
 | `VOCAnnotationUtils` | VOC XML 创建、解析、重命名和格式转换 |
 | `Datasets` | YOLO 数据集检查和训练集/验证集划分 |
 | `ImageIO` | OpenCV 图像读取和保存 |
-| `MaskImageUtils` | 根据分割或矩形标签生成随机区域 mask |
+| `MaskImageUtils` | 根据分割或矩形标签生成 mask、保存 mask 外接框、膨胀 mask 和 LaMa 修复 |
 | `Augmenter` | 链式构建图像增强，并支持多进程批量增强 |
 
 `cvkit.ocr` 当前为预留模块，暂未提供公开功能。
@@ -112,14 +121,9 @@ objects = document.findall("object")
 
 ### 创建 XML
 
-`create()` 在内存中创建文档，`save()` 负责写入文件。保存前应确保输出文件的
-父目录已经存在。
+`create()` 在内存中创建文档，`save()` 负责写入文件并自动创建父目录。
 
 ```python
-from pathlib import Path
-
-Path("outputs").mkdir(parents=True, exist_ok=True)
-
 (
     XMLDocument.create(
         "outputs/example.xml",
@@ -290,21 +294,23 @@ from cvkit.core.annotation.hbb.voc import VOCAnnotationUtils
 
 ### 创建 VOC XML
 
-`build_annotation()` 当前用于创建包含单个矩形框的 VOC XML，并在方法内部保存。
-输出目录需要提前创建。
+`build_annotation()` 根据 `bboxes` 创建一个或多个同类别的 VOC `object`。该方法
+只构建内存文档，必须继续调用 `save()` 才会写入 XML。
 
 ```python
-from pathlib import Path
-
-Path("annotations").mkdir(parents=True, exist_ok=True)
-
-document = VOCAnnotationUtils.build_annotation(
-    img_name="image001.jpg",
-    img_size=(1920, 1080),
-    bbox=(100, 200, 500, 600),
-    save_path="annotations/image001.xml",
-    class_name="defect",
-    depth=3,
+(
+    VOCAnnotationUtils.build_annotation(
+        img_name="image001.jpg",
+        img_size=(1920, 1080),
+        bboxes=[
+            [100, 200, 500, 600],
+            [700, 300, 900, 650],
+        ],
+        save_path="annotations/image001.xml",
+        class_name="defect",
+        depth=3,
+    )
+    .save()
 )
 ```
 
@@ -326,6 +332,7 @@ image_size, bboxes = document.parse_voc()
 image_size = (1920, 1080)
 bboxes = [
     [100, 200, 500, 600, "defect"],
+    [700, 300, 900, 650, "defect"],
 ]
 ```
 
@@ -419,7 +426,8 @@ dataset/split/
 ```
 
 `ratio` 必须位于 `0` 和 `1` 之间。划分以标签文件为入口，支持
-`.jpg`、`.jpeg` 和 `.png` 图片。
+`.jpg`、`.jpeg` 和 `.png` 图片。当前划分使用全局随机状态且没有固定随机种子；
+重复运行前还应自行清理旧的 `split/`，避免上一次结果残留。
 
 ## 图像读写
 
@@ -488,7 +496,17 @@ document.save(
 from cvkit.core.image.mask import MaskImageUtils
 ```
 
-mask 约定：
+`MaskImageUtils` 按下面的目录结构自动查找标签，构造时不接收 `label_path`：
+
+```text
+dataset/
+├── images/
+│   └── image001.jpg
+└── labels/
+    └── image001.txt
+```
+
+初始化时会立即读取原图。mask 使用以下像素约定：
 
 - `0`：黑色背景，不擦除；
 - `255`：白色目标区域，需要擦除。
@@ -506,16 +524,14 @@ dataset/mask/<image_stem>.png
 (
     MaskImageUtils(
         image_path="dataset/images/image001.jpg",
-        label_path="dataset/labels/image001.txt",
         cls=0,
         erase_num=2,
     )
-    .read()
     .generate_from_seg()
 )
 ```
 
-该方法从类别 `0` 的所有多边形中随机选择两个，并将它们填充为白色。
+该方法读取 YOLO 分割标签，从类别 `0` 的所有多边形中随机选择两个并填充为白色。
 
 ### 根据 YOLO HBB 标签生成
 
@@ -523,11 +539,9 @@ dataset/mask/<image_stem>.png
 (
     MaskImageUtils(
         image_path="dataset/images/image001.jpg",
-        label_path="dataset/labels/image001.txt",
         cls=0,
         erase_num=2,
     )
-    .read()
     .generate_from_hbb()
 )
 ```
@@ -537,27 +551,85 @@ dataset/mask/<image_stem>.png
 当 `erase_num=0` 时生成全黑 mask；当 `erase_num` 大于目标类别标注数量时抛出
 `ValueError`。
 
-### 获取最大前景区域的外接框
+### 保存 mask 外接框
 
 ```python
-bbox = MaskImageUtils(
-    image_path="dataset/mask/image001.png"
-).find_largest_bbox()
-
-print(bbox)
+(
+    MaskImageUtils(
+        image_path="dataset/images/image001.jpg",
+        cls=0,
+        erase_num=2,
+    )
+    .generate_from_seg()
+    .save_mask_bbox()
+)
 ```
 
-返回：
+`save_mask_bbox()` 使用 `cv2.RETR_EXTERNAL` 提取所有外部轮廓，并为每个有效轮廓
+生成一个 YOLO HBB。标签保存到：
+
+```text
+dataset/cachu/labels/image001.txt
+```
+
+多个互不相连的 mask 会生成多行标注；相互接触或重叠的区域可能被识别为一个轮廓。
+当前实现通过临时 VOC 文档转换为 YOLO，因此单类别输出的类别 ID 为 `0`。
+`save_mask_bbox()` 不会把临时 VOC 文档写入磁盘。
+
+### 膨胀 mask
 
 ```python
-(xmin, ymin, xmax, ymax)
+utils = (
+    MaskImageUtils(
+        image_path="dataset/images/image001.jpg",
+        cls=0,
+        erase_num=1,
+    )
+    .generate_from_seg()
+    .expand_mask(dilate_kernel_size=5)
+)
 ```
 
-mask 中没有前景轮廓时返回 `None`。返回坐标适合直接用于 NumPy 左闭右开切片：
+`expand_mask()` 使用椭圆形结构元素执行一次膨胀。`dilate_kernel_size=1` 使用
+`1 x 1` 核，不会产生实际膨胀效果。
+
+### LaMa 图像修复
+
+推荐在膨胀前保存标注，让标注描述原始目标区域；膨胀后的 mask 仅供图像修复使用：
 
 ```python
-crop = image[ymin:ymax, xmin:xmax]
+from pathlib import Path
+
+from cvkit.core.image.mask import MaskImageUtils
+
+
+image_path = Path("dataset/images/image001.jpg")
+result_path = (
+    image_path.parents[1]
+    / "cachu"
+    / "images"
+    / f"{image_path.stem}.png"
+)
+
+(
+    MaskImageUtils(
+        image_path=image_path,
+        cls=0,
+        erase_num=1,
+    )
+    .generate_from_seg()
+    .save_mask_bbox()
+    .expand_mask(dilate_kernel_size=5)
+    .repair()
+    .save(save_path=result_path)
+)
 ```
+
+`repair()` 使用 `simple_lama_inpainting.SimpleLama` 修复白色 mask 区域。LaMa 会把
+输入宽高补齐到 `8` 的倍数，当前实现不会自动裁剪回原始尺寸；当原图宽高不是
+`8` 的倍数时，输出尺寸可能增大。
+
+`save_mask_seg()` 当前仍是预留实现，尚未写出 YOLO 分割标签，不应作为公开接口使用。
 
 ## 数据增强
 
@@ -599,6 +671,7 @@ transform = (
 - `gauss_noise()`：高斯噪声；
 - `image_compression()`：JPEG/WebP 压缩模拟；
 - `clahe()`：局部直方图均衡；
+- `to_gray()`：随机转换为灰度图；
 - `motion_blur()`：运动模糊；
 - `one_of_sharp_blur()`：锐化或模糊组合；
 - `one_of_affine()`：横向或纵向缩放组合。
@@ -676,7 +749,11 @@ bash build.sh
 - 部分标注处理方法会直接覆盖或删除原文件，批量执行前应先备份数据。
 - `Datasets.check()` 会把坏图片移动到 `images_bad/`。
 - mask 生成和数据增强包含随机选择，每次运行结果可能不同。
-- `VOCAnnotationUtils.build_annotation()` 当前只创建一个 `object`。
+- `VOCAnnotationUtils.build_annotation()` 支持多个框，但一次调用中的所有框共用同一个
+  `class_name`。
+- `VOCAnnotationUtils.save_as_yolo()` 按单个 XML 内的类别名称排序并从 `0` 生成
+  类别 ID，不维护跨文件的全局类别映射。
+- `MaskImageUtils.save_mask_seg()` 当前尚未完成，不应作为公开接口使用。
 - `XMLDocument.append_node()` 通过 XPath 查找父节点；存在多个同名父节点时会使用
-  第一个匹配节点。
+  第一个匹配节点。需要操作多个同名节点时应使用带索引的路径，例如 `object[2]`。
 - 项目当前处于 Alpha 阶段，接口仍可能调整。

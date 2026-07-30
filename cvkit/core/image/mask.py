@@ -30,28 +30,61 @@ class MaskImageUtils(ImageIO):
         if self.erase_num < 0:
             raise ValueError("erase_num must be >= 0")
 
-    def save_largest_bbox(self, class_name: str = "object"):
+    def save_mask_bbox(self, class_name: str = "object"):
         mask_bin = self.image
         save_dir = self.path.parents[1] / "cachu"
         contours, _ = cv2.findContours(mask_bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if len(contours) == 0:
             raise ValueError("contours == 0")
-        max_cnt = max(contours, key=cv2.contourArea)
-        x, y, w, h = cv2.boundingRect(max_cnt)
-        xmin, ymin = x, y
-        xmax, ymax = x + w, y + h
+
+        bboxes = []
+        for contour in contours:
+            if cv2.contourArea(contour) <= 0:
+                continue
+            x, y, w, h = cv2.boundingRect(contour)
+            xmin, ymin = x, y
+            xmax, ymax = x + w, y + h
+            bboxes.append([xmin, ymin, xmax, ymax])
         height, width = self.ori_image.shape[:2]
+
+        save_xml_path = save_dir / "xml" / f"{self.path.stem}.xml"
+        save_label_dir = save_dir / "labels"
         (
             VOCAnnotationUtils
             .build_annotation(
                 f"{self.path.stem}.png",
                 (width, height),
-                (xmin, ymin, xmax, ymax),
-                save_dir / "xml" / f"{self.path.stem}.xml",
+                bboxes,
+                save_xml_path,
                 class_name,
             )
-            .save_as_yolo(save_dir / "labels")
+            .save_as_yolo(save_label_dir)
         )
+        return self
+
+    def save_mask_seg(self):
+        mask_bin = self.image
+        save_dir = self.path.parents[1] / "cachu"
+        height, width = self.ori_image.shape[:2]
+        contours, _ = cv2.findContours(mask_bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if len(contours) == 0:
+            raise ValueError("contours == 0")
+
+        labels = []
+        for contour in contours:
+            if cv2.contourArea(contour) <= 0:
+                raise ValueError("contourArea <= 0")
+            points = contour.reshape(-1, 2)
+            coordinates = []
+            for x, y in points:
+                x_normalized = float(np.clip(x / width, 0.0, 1.0))
+                y_normalized = float(np.clip(y / height, 0.0, 1.0))
+                coordinates.append(f"{x_normalized:.6f}")
+                coordinates.append(f"{y_normalized:.6f}")
+            labels.append(f"{self.cls} {' '.join(coordinates)}")
+
+        save_path = save_dir / "labels" / f"{self.path.stem}.txt"
+        TXTDocument(save_path).write("\n".join(labels) + "\n").save()
         return self
 
     def expand_mask(self, dilate_kernel_size: int):
@@ -143,14 +176,14 @@ class MaskImageUtils(ImageIO):
 
 
 if __name__ == "__main__":
-    image_path = Path("/mnt/FourT/test/images/1.jpg")
+    image_path = Path("/mnt/FourT/TV/项点/侧视丢失不可视/垂向油压减振器安装螺栓/摇枕弹簧/datasets1/test/images/25B__206P_20250902_182727_12_12_1--cxyyjzqazlsds_0.png")
     root = image_path.parents[1]
     result_path = root / "cachu" / "images" / f"{image_path.stem}.png"
 
     (
         MaskImageUtils(image_path, erase_num=1)
-        .generate_from_hbb()
-        .save_largest_bbox()
+        .generate_from_seg()
+        .save_mask_bbox()
         .expand_mask(1)
         .repair()
         .save(save_path=result_path)

@@ -53,11 +53,10 @@ class VOCAnnotationUtils(XMLDocument):
 
     @classmethod
     def build_annotation(
-            cls, img_name: str, img_size: tuple[int, int], bbox: tuple[int, int, int, int],
+            cls, img_name: str, img_size: tuple[int, int], bboxes: List[List[int]],
             save_path: str | Path, class_name: str = "object", depth: int = 1,
     ) -> "VOCAnnotationUtils":
         width, height = img_size
-        xmin, ymin, xmax, ymax = bbox
         document = cls.create(save_path, root_tag="annotation")
         (
             document
@@ -71,19 +70,26 @@ class VOCAnnotationUtils(XMLDocument):
             .append_node("size", "height", text=str(height))
             .append_node("size", "depth", text=str(depth))
             .append_node(".", "segmented", text="0")
-            .append_node(".", "object")
-            .append_node("object", "name", text=class_name)
-            .append_node("object", "pose", text="Unspecified")
-            .append_node("object", "truncated", text="0")
-            .append_node("object", "difficult", text="0")
-
-            # add bndbox
-            .append_node("object", "bndbox")
-            .append_node("object/bndbox", "xmin", text=str(xmin))
-            .append_node("object/bndbox", "ymin", text=str(ymin))
-            .append_node("object/bndbox", "xmax", text=str(xmax))
-            .append_node("object/bndbox", "ymax", text=str(ymax))
         )
+        for index, bbox in enumerate(bboxes, start=1):
+            xmin, ymin, xmax, ymax = bbox
+            document.append_node(".", "object")
+            object_path = f"object[{index}]"
+            bndbox_path = f"{object_path}/bndbox"
+            (
+                document
+                .append_node(object_path, "name", text=class_name)
+                .append_node(object_path, "pose", text="Unspecified")
+                .append_node(object_path, "truncated", text="0")
+                .append_node(object_path, "difficult", text="0")
+
+                # add bndbox
+                .append_node(object_path, "bndbox")
+                .append_node(bndbox_path, "xmin", text=str(xmin))
+                .append_node(bndbox_path, "ymin", text=str(ymin))
+                .append_node(bndbox_path, "xmax", text=str(xmax))
+                .append_node(bndbox_path, "ymax", text=str(ymax))
+            )
         return document
 
     def rename_voc_label(self, new_label: str, old_label: str) -> VOCAnnotationUtils:
