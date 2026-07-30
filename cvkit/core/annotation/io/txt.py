@@ -12,6 +12,12 @@ class TXTDocument(BaseDocument):
         super().__init__(path)
         self.content = None
 
+    @classmethod
+    def create(cls, path: str | Path) -> TXTDocument:
+        document = cls(path)
+        document.content = ""
+        return document
+
     def read(self) -> str:
         with open(str(self.path), "r", encoding="utf-8") as f:
             self.content = f.read()

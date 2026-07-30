@@ -176,15 +176,17 @@ class MaskImageUtils(ImageIO):
 
 
 if __name__ == "__main__":
-    image_path = Path("/mnt/FourT/TV/项点/侧视丢失不可视/垂向油压减振器安装螺栓/摇枕弹簧/datasets1/test/images/25B__206P_20250902_182727_12_12_1--cxyyjzqazlsds_0.png")
-    root = image_path.parents[1]
-    result_path = root / "cachu" / "images" / f"{image_path.stem}.png"
+    from tqdm import tqdm
 
-    (
-        MaskImageUtils(image_path, erase_num=1)
-        .generate_from_seg()
-        .save_mask_bbox()
-        .expand_mask(1)
-        .repair()
-        .save(save_path=result_path)
-    )
+    image_dir = ""
+    for image_path in tqdm(Path(image_dir).iterdir()):
+        root = image_path.parents[1]
+        result_path = root / "cachu" / "images" / f"{image_path.stem}.png"
+        (
+            MaskImageUtils(image_path, erase_num=1)
+            .generate_from_seg()
+            .save_mask_seg()
+            .expand_mask(1)
+            .repair()
+            .save(save_path=result_path)
+        )

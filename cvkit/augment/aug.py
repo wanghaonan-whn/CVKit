@@ -8,7 +8,7 @@ from cvkit.core.annotation.io.txt import TXTDocument
 
 class Augmenter:
     """
-        Albumentations 数据增强构建器。
+        基于 Albumentations 数据增强构建器
         Example:
             >>> transform = (
             ...     Augmenter()
