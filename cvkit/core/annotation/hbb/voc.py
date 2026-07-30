@@ -11,46 +11,6 @@ class VOCAnnotationUtils(XMLDocument):
         XML 标签工具
     """
 
-    def get_voc_label_names(self) -> list[str]:
-        return [
-            node.text
-            for node in self.findall("object/name")
-            if node.text is not None
-        ]
-
-    def is_label_in_voc(self, keyword: str) -> bool:
-        """关键词查找对应的xml文件"""
-        if keyword in self.get_voc_label_names():
-            return True
-        else:
-            return False
-
-    def parse_voc(self) -> tuple[tuple, List]:
-        """
-            解析xml标注文件
-            width: 宽
-            height: 高
-            parse_list: [xmin, ymin, xmax, ymax, 类名]
-        """
-        size = self.find("size")
-        width = int(size.find("width").text)
-        height = int(size.find("height").text)
-
-        parse_list = []
-        for node in self.findall("object"):
-            name = node.find("name").text
-            bbox = node.find("bndbox")
-            if bbox is None:
-                raise ValueError("bndbox is None")
-            xmin = int(bbox.find("xmin").text)
-            ymin = int(bbox.find("ymin").text)
-            xmax = int(bbox.find("xmax").text)
-            ymax = int(bbox.find("ymax").text)
-            parse_list.append(
-                [xmin, ymin, xmax, ymax, name]
-            )
-        return (width, height), parse_list
-
     @classmethod
     def build_annotation(
             cls, img_name: str, img_size: tuple[int, int], bboxes: List[List[int]],
@@ -91,6 +51,46 @@ class VOCAnnotationUtils(XMLDocument):
                 .append_node(bndbox_path, "ymax", text=str(ymax))
             )
         return document
+
+    def get_voc_label_names(self) -> list[str]:
+        return [
+            node.text
+            for node in self.findall("object/name")
+            if node.text is not None
+        ]
+
+    def is_label_in_voc(self, keyword: str) -> bool:
+        """关键词查找对应的xml文件"""
+        if keyword in self.get_voc_label_names():
+            return True
+        else:
+            return False
+
+    def parse_voc(self) -> tuple[tuple, List]:
+        """
+            解析xml标注文件
+            width: 宽
+            height: 高
+            parse_list: [xmin, ymin, xmax, ymax, 类名]
+        """
+        size = self.find("size")
+        width = int(size.find("width").text)
+        height = int(size.find("height").text)
+
+        parse_list = []
+        for node in self.findall("object"):
+            name = node.find("name").text
+            bbox = node.find("bndbox")
+            if bbox is None:
+                raise ValueError("bndbox is None")
+            xmin = int(bbox.find("xmin").text)
+            ymin = int(bbox.find("ymin").text)
+            xmax = int(bbox.find("xmax").text)
+            ymax = int(bbox.find("ymax").text)
+            parse_list.append(
+                [xmin, ymin, xmax, ymax, name]
+            )
+        return (width, height), parse_list
 
     def rename_voc_label(self, new_label: str, old_label: str) -> VOCAnnotationUtils:
         """重命名标签"""

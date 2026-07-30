@@ -299,18 +299,18 @@ from cvkit.core.annotation.hbb.voc import VOCAnnotationUtils
 
 ```python
 (
-    VOCAnnotationUtils.build_annotation(
-        img_name="image001.jpg",
-        img_size=(1920, 1080),
-        bboxes=[
-            [100, 200, 500, 600],
-            [700, 300, 900, 650],
-        ],
-        save_path="annotations/image001.xml",
-        class_name="defect",
-        depth=3,
-    )
-    .save()
+  VOCAnnotationUtils.build_annotation(
+    img_name="image001.jpg",
+    img_size=(1920, 1080),
+    bboxes=[
+      [100, 200, 500, 600],
+      [700, 300, 900, 650],
+    ],
+    save_path="annotations/image001.xml",
+    class_name="defect",
+    depth=3,
+  )
+  .save()
 )
 ```
 
