@@ -3,7 +3,7 @@ import numpy as np
 from pathlib import Path
 from PIL import Image
 from cvkit.core.annotation.hbb.voc import VOCAnnotationUtils
-from cvkit.core.annotation.io.txt import TXTDocument
+from cvkit.core.annotation.io.txt import TxtDocument
 from cvkit.core.image.io import ImageIO
 from simple_lama_inpainting import SimpleLama
 
@@ -84,7 +84,7 @@ class MaskImageUtils(ImageIO):
             labels.append(f"{self.cls} {' '.join(coordinates)}")
 
         save_path = save_dir / "labels" / f"{self.path.stem}.txt"
-        TXTDocument(save_path).write("\n".join(labels) + "\n").save()
+        TxtDocument(save_path).write("\n".join(labels) + "\n").save()
         return self
 
     def expand_mask(self, dilate_kernel_size: int):
@@ -100,7 +100,7 @@ class MaskImageUtils(ImageIO):
 
     def generate_from_seg(self):
         mask = np.zeros((self.height, self.width), dtype=np.uint8)
-        lines = TXTDocument(self.label_path).readlines()
+        lines = TxtDocument(self.label_path).readlines()
         if len(lines) == 0:
             raise ValueError("label_path must contain at least one line")
 
@@ -137,7 +137,7 @@ class MaskImageUtils(ImageIO):
 
     def generate_from_hbb(self):
         mask = np.zeros((self.height, self.width), dtype=np.uint8)
-        lines = TXTDocument(self.label_path).readlines()
+        lines = TxtDocument(self.label_path).readlines()
         if len(lines) == 0:
             raise ValueError("label cat not be empty")
 

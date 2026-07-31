@@ -30,7 +30,7 @@ python -m pip install simple-lama-inpainting
 
 | 模块 | 功能 |
 | --- | --- |
-| `TXTDocument` | TXT 读取、写入、追加和另存为 |
+| `TxtDocument` | TXT 读取、写入、追加和另存为 |
 | `XMLDocument` | XML 创建、查询、修改节点和保存 |
 | `YOLOAnnotationUtils` | YOLO HBB 解析、类别映射、删除类别、去重和统计 |
 | `YOLOSegmentationUtils` | YOLO 分割多边形转换为 YOLO HBB |
@@ -64,7 +64,7 @@ dataset/
 导入：
 
 ```python
-from cvkit.core.annotation.io.txt import TXTDocument
+from cvkit.core.annotation.io.txt import TxtDocument
 ```
 
 ### 读取

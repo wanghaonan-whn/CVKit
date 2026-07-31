@@ -3,10 +3,10 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Mapping
 from typing import List
-from cvkit.core.annotation.io.txt import TXTDocument
+from cvkit.core.annotation.io.txt import TxtDocument
 
 
-class YOLOAnnotationUtils(TXTDocument):
+class YOLOAnnotationUtils(TxtDocument):
     """
         YOLO 标签工具类 V1.0
     """
@@ -74,14 +74,12 @@ class YOLOAnnotationUtils(TXTDocument):
         return self
 
     def remove_empty(self) -> YOLOAnnotationUtils:
-        readlines = self.readlines()
-        if len(readlines) == 0:
+        if len(self.readlines()) == 0:
             self.path.unlink()
         return self
 
     def remove_duplicate(self) -> YOLOAnnotationUtils:
-        readlines = self.readlines()
-        unique = list(dict.fromkeys(readlines))
+        unique = list(dict.fromkeys(self.readlines()))
         self.content = "".join(unique)
         self.save()
         return self

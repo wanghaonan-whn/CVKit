@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image
 from cvkit.augment.aug import Augmenter
 from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
-from cvkit.core.annotation.io.txt import TXTDocument
+from cvkit.core.annotation.io.txt import TxtDocument
 
 
 class CopyPaste:
@@ -38,7 +38,7 @@ class CopyPaste:
         save_image_path.mkdir(parents=True, exist_ok=True)
         save_label_path.mkdir(parents=True, exist_ok=True)
 
-        txt = TXTDocument.create(save_label_path / f'guoche-{n}-{self.image_path.stem}-{self.class_id}-nump{num_pase}.txt')
+        txt = TxtDocument.create(save_label_path / f'guoche-{n}-{self.image_path.stem}-{self.class_id}-nump{num_pase}.txt')
         for _ in range(num_pase):
             label_choice = random.choice(labels)
             labels.remove(label_choice)

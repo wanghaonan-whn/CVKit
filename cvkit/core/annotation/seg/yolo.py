@@ -1,7 +1,7 @@
-from cvkit.core.annotation.io.txt import TXTDocument
+from cvkit.core.annotation.io.txt import TxtDocument
 
 
-class YOLOSegmentationUtils(TXTDocument):
+class YOLOSegmentationUtils(TxtDocument):
 
     def polygon_2_bbox(self):
         lines = self.readlines()

@@ -3,7 +3,7 @@ import cv2
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
-from cvkit.core.annotation.io.txt import TXTDocument
+from cvkit.core.annotation.io.txt import TxtDocument
 
 
 class Augmenter:
@@ -170,4 +170,4 @@ class Augmenter:
                 f"{int(cls)} {x:.6f} {y:.6f} {w:.6f} {h:.6f}\n"
                 for (x, y, w, h), cls in zip(augmented["bboxes"], augmented["labels"])
             )
-            TXTDocument(save_label_path).write(content).save()
+            TxtDocument(save_label_path).write(content).save()
