@@ -38,7 +38,7 @@ class CopyPaste:
         save_image_path.mkdir(parents=True, exist_ok=True)
         save_label_path.mkdir(parents=True, exist_ok=True)
 
-        txt = TxtDocument.create(save_label_path / f'guoche-{n}-{self.image_path.stem}-{self.class_id}-nump{num_pase}.txt')
+        txt = TxtDocument.new(save_label_path / f'guoche-{n}-{self.image_path.stem}-{self.class_id}-nump{num_pase}.txt')
         for _ in range(num_pase):
             label_choice = random.choice(labels)
             labels.remove(label_choice)

@@ -125,15 +125,15 @@ objects = document.findall("object")
 
 ```python
 (
-    XMLDocument.create(
-        "outputs/example.xml",
-        root_tag="annotation",
-    )
-    .append_node(".", "filename", text="image001.jpg")
-    .append_node(".", "size")
-    .append_node("size", "width", text="1920")
-    .append_node("size", "height", text="1080")
-    .save()
+  XMLDocument.new(
+    "outputs/example.xml",
+    root_tag="annotation",
+  )
+  .append_node(".", "filename", text="image001.jpg")
+  .append_node(".", "size")
+  .append_node("size", "width", text="1920")
+  .append_node("size", "height", text="1080")
+  .save()
 )
 ```
 
