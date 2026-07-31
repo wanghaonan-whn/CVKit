@@ -28,11 +28,7 @@ class Augmenter:
 
     def build(self, bbox=False):
         if bbox:
-            return A.Compose(
-                self.__transforms,
-                bbox_params=A.BboxParams(format="yolo", label_fields=["labels"])
-            )
-
+            return A.Compose(self.__transforms, bbox_params=A.BboxParams(format="yolo", label_fields=["labels"]))
         return A.Compose(self.__transforms)
 
     def horizontal_flip(self, p=0.5) -> "Augmenter":
@@ -63,11 +59,7 @@ class Augmenter:
                 当前 Augmenter 对象。
         """
         self.__transforms.append(
-            A.RandomBrightnessContrast(
-                brightness_limit=brightness_limit,
-                contrast_limit=contrast_limit,
-                p=p
-            )
+            A.RandomBrightnessContrast(brightness_limit=brightness_limit, contrast_limit=contrast_limit, p=p)
         )
         return self
 
@@ -93,11 +85,7 @@ class Augmenter:
 
     def clahe(self, clip_limit=4.0, tile_grid_size=(8, 8), p=0.5):
         self.__transforms.append(
-            A.CLAHE(
-                clip_limit=clip_limit,
-                tile_grid_size=tile_grid_size,
-                p=p,
-            )
+            A.CLAHE(clip_limit=clip_limit, tile_grid_size=tile_grid_size, p=p)
         )
         return self
 
@@ -132,16 +120,8 @@ class Augmenter:
         """ 拉伸组合增强 """
         self.__transforms.append(
             A.OneOf([
-                A.Affine(
-                    scale={"x": x_scale},
-                    interpolation=cv2.INTER_AREA, fit_output=True,
-                    p=sub_p
-                ),
-                A.Affine(
-                    scale={"y": y_scale},
-                    interpolation=cv2.INTER_AREA, fit_output=True,
-                    p=sub_p
-                ),
+                A.Affine(scale={"x": x_scale}, interpolation=cv2.INTER_AREA, fit_output=True, p=sub_p),
+                A.Affine(scale={"y": y_scale}, interpolation=cv2.INTER_AREA, fit_output=True, p=sub_p),
             ], p=p)
         )
         return self
