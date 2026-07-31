@@ -12,22 +12,22 @@ class TXTDocument(BaseDocument):
         super().__init__(path)
         self.content = None
 
-    @classmethod
-    def create(cls, path: str | Path) -> TXTDocument:
-        document = cls(path)
-        document.content = ""
-        return document
-
-    def read(self) -> str:
-        with open(str(self.path), "r", encoding="utf-8") as f:
-            self.content = f.read()
-        return self.content
-
     def __str__(self) -> str:
         return self.content or ""
 
     def __len__(self) -> int:
         return len(self.content or "")
+
+    @classmethod
+    def create(cls, path: str | Path) -> TXTDocument:
+        doc = cls(path)
+        doc.content = ""
+        return doc
+
+    def read(self) -> str:
+        with open(str(self.path), "r", encoding="utf-8") as f:
+            self.content = f.read()
+        return self.content
 
     def readlines(self) -> list[str]:
         with open(self.path, "r", encoding="utf-8") as f:

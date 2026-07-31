@@ -115,7 +115,7 @@ class Augmenter:
                 [
                     A.Sharpen(p=1),
                     A.Blur(blur_limit=3, p=1),
-                    A.MotionBlur(blur_limit=5, p=1),
+                    A.GaussianBlur(blur_limit=5, p=1),
                 ],
                 p=p,
             )
@@ -174,7 +174,9 @@ class Augmenter:
             print(f"warning: {label_path} does not exist")
             return
 
-        bboxes, labels = YOLOAnnotationUtils(label_path).parse_label()
+        lines = YOLOAnnotationUtils(label_path).readlines()
+        labels = [label[0] for label in YOLOAnnotationUtils.parse_label(lines)]
+        bboxes = [label[1:] for label in YOLOAnnotationUtils.parse_label(lines)]
         transform = self.build(bbox=True)
 
         for index in range(self.repeat):

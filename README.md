@@ -182,7 +182,7 @@ from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
 
 ```python
 bboxes, classes = YOLOAnnotationUtils(
-    "labels/image001.txt"
+  "labels/image001.txt"
 ).parse_label()
 
 print(bboxes)

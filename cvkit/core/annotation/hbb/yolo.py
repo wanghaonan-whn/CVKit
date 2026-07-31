@@ -11,17 +11,16 @@ class YOLOAnnotationUtils(TXTDocument):
         YOLO 标签工具类 V1.0
     """
 
-    def parse_label(self) -> tuple[List[List[float]], List[int]]:
-        bboxes = []
-        classes = []
-        for line in self.readlines():
+    @staticmethod
+    def parse_label(lines: List) -> List[List[float | int]]:
+        labels = []
+        for line in lines:
             parts = line.strip().split()
             if not parts:
                 continue
             cls, x, y, w, h = parts
-            bboxes.append([float(x), float(y), float(w), float(h)])
-            classes.append(int(cls))
-        return bboxes, classes
+            labels.append([int(cls), float(x), float(y), float(w), float(h)])
+        return labels
 
     def remap_classes(self, mapping: Mapping[int | str, int | str]) -> YOLOAnnotationUtils:
         """
@@ -93,3 +92,19 @@ class YOLOAnnotationUtils(TXTDocument):
             for line in self.readlines()
             if line.strip()
         )
+
+    def get_classes_box(self, class_ids: int | List[int]) -> List[str]:
+        target_class_ids = {class_ids} if isinstance(class_ids, int) else set(class_ids)
+        return [
+            line
+            for line in self.readlines()
+            if line.strip() and int(line.split()[0]) in target_class_ids
+        ]
+
+    @staticmethod
+    def yolo_to_xy(size, x, y, w, h):
+        x = x * size[0]
+        w = w * size[0]
+        y = y * size[1]
+        h = h * size[1]
+        return x, y, w, h

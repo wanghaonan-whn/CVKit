@@ -25,6 +25,10 @@ class ImageIO(BaseImage):
     def width(self):
         return self.image.shape[1]
 
+    @property
+    def shape(self):
+        return self.image.shape
+
     def save(self, image=None, save_path: str | Path | None = None):
         path = Path(save_path) if save_path is not None else self.path
         image = image if image is not None else self.image
