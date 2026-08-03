@@ -97,7 +97,6 @@ class VOCAnnotationUtils(XMLDocument):
         for node in self.findall("object/name"):
             if node.text == old_label:
                 node.text = new_label
-        super().save()
         return self
 
     @staticmethod
@@ -111,6 +110,7 @@ class VOCAnnotationUtils(XMLDocument):
         return x, y, bw, bh
 
     def save_as_yolo(self, save_path: str | Path | None = None) -> VOCAnnotationUtils:
+        #  TODO:在每个文件中自行生成类别映射，可能导致不同文件的类别 ID 不一致。类别映射最好从外部传入。
         if save_path is None:
             save_path = self.path.parents[1].joinpath("labels")
         else:
