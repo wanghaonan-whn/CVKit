@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from pathlib import Path
 from PIL import Image
+from typing_extensions import Self
 from cvkit.core.annotation.hbb.voc import VOCAnnotationUtils
 from cvkit.core.annotation.io.txt import TxtDocument
 from cvkit.core.image.io import ImageIO
@@ -9,6 +10,7 @@ from simple_lama_inpainting import SimpleLama
 
 
 class MaskImageUtils(ImageIO):
+    # TODO:职责过多
     def __init__(
             self,
             image_path: str | Path,
@@ -17,7 +19,6 @@ class MaskImageUtils(ImageIO):
     ) -> None:
         """
         :param image_path:
-        :param label_path:
         :param cls: 擦除类别
         :param erase_num: 擦除个数
         """
@@ -174,19 +175,55 @@ class MaskImageUtils(ImageIO):
         super().save(mask, save_path)
         return self
 
+    def crop_mask(self, save_dir: str | Path) -> Self:
+        height, width = self.shape[:2]
+        lines = TxtDocument(self.label_path).readlines()
+
+        for index, line in enumerate(lines):
+            values = line.strip().split()
+            if not values: continue
+
+            class_id = int(values[0])
+            if class_id != self.cls: continue
+
+            points = np.asarray(values[1:], dtype=np.float32).reshape(-1, 2)
+            points[:, 0] *= width
+            points[:, 1] *= height
+            points[:, 0] = np.clip(points[:, 0], 0, width - 1)
+            points[:, 1] = np.clip(points[:, 1], 0, height - 1)
+            points = np.rint(points).astype(np.int32)
+
+            alpha = np.zeros((height, width), dtype=np.uint8)
+            cv2.fillPoly(alpha, [points], 255)
+
+            x, y, crop_width, crop_height = cv2.boundingRect(points)
+            xmax = x + crop_width
+            ymax = y + crop_height
+            rgb_crop = self.ori_image[y:ymax, x:xmax]
+            alpha_crop = alpha[y:ymax, x:xmax]
+            rgba_crop = np.dstack((rgb_crop, alpha_crop))
+
+            save_dir = Path(save_dir)
+            save_dir.mkdir(parents=True, exist_ok=True)
+            super().save(rgba_crop, save_path=save_dir / f"crop_seg_{index}.png")
+        return self
+
 
 if __name__ == "__main__":
-    from tqdm import tqdm
-
-    image_dir = ""
-    for image_path in tqdm(Path(image_dir).iterdir()):
-        root = image_path.parents[1]
-        result_path = root / "cachu" / "images" / f"{image_path.stem}.png"
-        (
-            MaskImageUtils(image_path, erase_num=1)
-            .generate_from_seg()
-            .save_mask_seg()
-            .expand_mask(1)
-            .repair()
-            .save(save_path=result_path)
-        )
+    # from tqdm import tqdm
+    #
+    # image_dir = ""
+    # for image_path in tqdm(Path(image_dir).iterdir()):
+    #     root = image_path.parents[1]
+    #     result_path = root / "cachu" / "images" / f"{image_path.stem}.png"
+    #     (
+    #         MaskImageUtils(image_path, erase_num=1)
+    #         .generate_from_seg()
+    #         .save_mask_seg()
+    #         .expand_mask(1)
+    #         .repair()
+    #         .save(save_path=result_path)
+    #     )
+    MaskImageUtils(
+        image_path="/mnt/FourT/TV/项点/侧视丢失不可视/垂向油压减振器安装螺栓/test/images/7_1.png"
+    ).crop_mask(save_dir="")
