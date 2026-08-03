@@ -17,7 +17,7 @@ class XmlDocument(BaseDocument):
             self.__tree = ET.ElementTree(self.__root)
 
     @classmethod
-    def create(cls, path: str | Path, root_tag: str = "root"):
+    def new(cls, path: str | Path, root_tag: str = "root"):
         return cls(path, root_tag=root_tag)
 
     def read(self) -> str:
@@ -128,4 +128,4 @@ if __name__ == "__main__":
     # print(xmldoc.append_node("a", "1"))
     # xmldoc.update_text("size/width", "486").save()
     xml_path2 = "./1.xml"
-    XmlDocument.create(xml_path2).save()
+    XmlDocument.new(xml_path2).save()

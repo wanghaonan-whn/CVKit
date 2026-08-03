@@ -11,7 +11,7 @@ class VOCSegmentUtils(XmlDocument):
             save_path: str | Path, points, class_name: str = "object", depth: int = 1,
     ):
         width, height = img_size
-        document = cls.create(save_path, root_tag="annotation")
+        document = cls.new(save_path, root_tag="annotation")
         (
             document
             .append_node(".", "folder", text="images")

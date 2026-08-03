@@ -15,6 +15,9 @@ class BaseDocument(ABC):
     def read(self) -> Any:
         raise NotImplementedError
 
+    def new(self) -> Any:
+        raise NotImplementedError
+
     @abstractmethod
     def save(self) -> Any:
         raise NotImplementedError
