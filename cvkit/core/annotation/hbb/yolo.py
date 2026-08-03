@@ -51,7 +51,6 @@ class YOLOAnnotationUtils(TxtDocument):
             new_lines.append(" ".join(parts) + "\n")
 
         self.content = "".join(new_lines)
-        self.save()
         return self
 
     def del_cls(self, src_cls: str | int) -> YOLOAnnotationUtils:
@@ -70,7 +69,6 @@ class YOLOAnnotationUtils(TxtDocument):
                 continue
             new_lines.append(line)
         self.content = "".join(new_lines)
-        self.save()
         return self
 
     def remove_empty(self) -> YOLOAnnotationUtils:
@@ -81,7 +79,6 @@ class YOLOAnnotationUtils(TxtDocument):
     def remove_duplicate(self) -> YOLOAnnotationUtils:
         unique = list(dict.fromkeys(self.readlines()))
         self.content = "".join(unique)
-        self.save()
         return self
 
     def count_classes(self) -> Counter[int]:
