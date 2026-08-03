@@ -6,6 +6,7 @@ from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
 
 
 class Datasets:
+    # TODO: 数据集检查会直接修改数据，建议职责区分。DatasetsCleaner
     IMAGE_EXTS = (".jpg", ".jpeg", ".png")
 
     def __init__(self, data_dir: str | Path, ratio: float = 0.9) -> None:
