@@ -1,7 +1,6 @@
 import albumentations as A
 import cv2
 from concurrent.futures import ProcessPoolExecutor
-from pathlib import Path
 from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
 from cvkit.core.annotation.io.txt import TxtDocument
 
@@ -9,7 +8,6 @@ from cvkit.core.annotation.io.txt import TxtDocument
 class Augmenter:
     """
         基于 Albumentations 数据增强构建器
-        TODO: 混合了配置和执行，可以增加一个通用的 add(transform)
         Example:
             >>> transform = (
             ...     Augmenter()
@@ -20,12 +18,8 @@ class Augmenter:
             ... )
     """
 
-    def __init__(self, path: str | Path, repeat: int = 10):
-        self.path = Path(path)
-        self.repeat = repeat
+    def __init__(self):
         self.__transforms = []
-        self.save_label_dir = None
-        self.save_image_dir = None
 
     def build(self, bbox=False):
         if bbox:
