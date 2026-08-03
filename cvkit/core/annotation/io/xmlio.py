@@ -6,7 +6,7 @@ from typing_extensions import Self
 from cvkit.core.annotation.io.abc.base import BaseDocument
 
 
-class XMLDocument(BaseDocument):
+class XmlDocument(BaseDocument):
     def __init__(self, path: str | Path, root_tag: str | None = None) -> None:
         super().__init__(path)
         if root_tag is None:
@@ -60,7 +60,7 @@ class XMLDocument(BaseDocument):
         node = self.find(xpath)
         return node.attrib.get(attr_name, default) if node is not None else default
 
-    def update_text(self, xpath: str, new_value: str) -> XMLDocument:
+    def update_text(self, xpath: str, new_value: str) -> XmlDocument:
         """更新节点文本"""
         node = self.find(xpath)
         if node is not None:
@@ -69,7 +69,7 @@ class XMLDocument(BaseDocument):
             raise KeyError("Not found node {}".format(xpath))
         return self
 
-    def update_attr(self, xpath: str, attr_name: str, value: str) -> XMLDocument:
+    def update_attr(self, xpath: str, attr_name: str, value: str) -> XmlDocument:
         """更新节点属性"""
         node = self.find(xpath)
         if node is not None:
@@ -84,7 +84,7 @@ class XMLDocument(BaseDocument):
             tag: str,
             text: str | None = None,
             attrib: dict[str, str] | None = None
-    ) -> XMLDocument:
+    ) -> XmlDocument:
         """在指定节点下追加子节点"""
         parent = self.find(xpath)
         if parent is None:
@@ -94,7 +94,7 @@ class XMLDocument(BaseDocument):
         parent.append(node)
         return self
 
-    def remove_node(self, xpath: str) -> XMLDocument:
+    def remove_node(self, xpath: str) -> XmlDocument:
         """删除匹配节点"""
         target = self.find(xpath)
         if target is None:
@@ -128,4 +128,4 @@ if __name__ == "__main__":
     # print(xmldoc.append_node("a", "1"))
     # xmldoc.update_text("size/width", "486").save()
     xml_path2 = "./1.xml"
-    XMLDocument.create(xml_path2).save()
+    XmlDocument.create(xml_path2).save()

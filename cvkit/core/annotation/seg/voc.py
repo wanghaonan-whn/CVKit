@@ -1,10 +1,10 @@
 from pathlib import Path
 from typing import List
 
-from cvkit.core.annotation.io.xmlio import XMLDocument
+from cvkit.core.annotation.io.xmlio import XmlDocument
 
 
-class VOCSegmentUtils(XMLDocument):
+class VOCSegmentUtils(XmlDocument):
     @classmethod
     def build_annotation(
             cls, img_name: str, img_size: tuple[int, int], bboxes: List[List[int]],

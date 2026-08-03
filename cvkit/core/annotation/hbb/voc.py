@@ -3,10 +3,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import List
-from cvkit.core.annotation.io.xmlio import XMLDocument
+from cvkit.core.annotation.io.xmlio import XmlDocument
 
 
-class VOCAnnotationUtils(XMLDocument):
+class VOCAnnotationUtils(XmlDocument):
     """
         XML 标签工具
     """
