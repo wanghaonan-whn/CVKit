@@ -512,7 +512,7 @@ dataset/
 - `255`：白色目标区域，需要擦除。
 
 `cls` 指定参与生成的类别，`erase_num` 指定从该类别中随机选择多少个标注区域。
-生成结果默认保存为 PNG：
+生成方法只更新内存中的 mask；调用 `save_mask()` 后默认保存为 PNG：
 
 ```text
 dataset/mask/<image_stem>.png
@@ -528,6 +528,7 @@ dataset/mask/<image_stem>.png
         erase_num=2,
     )
     .generate_from_seg()
+    .save_mask()
 )
 ```
 
@@ -543,6 +544,7 @@ dataset/mask/<image_stem>.png
         erase_num=2,
     )
     .generate_from_hbb()
+    .save_mask()
 )
 ```
 
@@ -555,17 +557,17 @@ dataset/mask/<image_stem>.png
 
 ```python
 (
-    MaskImageUtils(
-        image_path="dataset/images/image001.jpg",
-        cls=0,
-        erase_num=2,
-    )
-    .generate_from_seg()
-    .save_mask_bbox()
+  MaskImageUtils(
+    image_path="dataset/images/image001.jpg",
+    cls=0,
+    erase_num=2,
+  )
+  .generate_from_seg()
+  .save_mask_bbox_as_yolo()
 )
 ```
 
-`save_mask_bbox()` 使用 `cv2.RETR_EXTERNAL` 提取所有外部轮廓，并为每个有效轮廓
+`save_mask_bbox_as_yolo()` 使用 `cv2.RETR_EXTERNAL` 提取所有外部轮廓，并为每个有效轮廓
 生成一个 YOLO HBB。标签保存到：
 
 ```text
@@ -573,24 +575,24 @@ dataset/cachu/labels/image001.txt
 ```
 
 多个互不相连的 mask 会生成多行标注；相互接触或重叠的区域可能被识别为一个轮廓。
-当前实现通过临时 VOC 文档转换为 YOLO，因此单类别输出的类别 ID 为 `0`。
-`save_mask_bbox()` 不会把临时 VOC 文档写入磁盘。
+输出标签使用构造 `MaskImageUtils` 时传入的 `cls` 作为类别 ID。可以通过
+`save_mask_bbox_as_yolo(save_path=...)` 指定其他保存位置。
 
 ### 膨胀 mask
 
 ```python
 utils = (
-    MaskImageUtils(
-        image_path="dataset/images/image001.jpg",
-        cls=0,
-        erase_num=1,
-    )
-    .generate_from_seg()
-    .expand_mask(dilate_kernel_size=5)
+  MaskImageUtils(
+    image_path="dataset/images/image001.jpg",
+    cls=0,
+    erase_num=1,
+  )
+  .generate_from_seg()
+  .expand_mask(kernel_size=5)
 )
 ```
 
-`expand_mask()` 使用椭圆形结构元素执行一次膨胀。`dilate_kernel_size=1` 使用
+`expand_mask()` 使用椭圆形结构元素执行一次膨胀。`kernel_size=1` 使用
 `1 x 1` 核，不会产生实际膨胀效果。
 
 ### LaMa 图像修复
@@ -602,26 +604,25 @@ from pathlib import Path
 
 from cvkit.core.image.mask import MaskImageUtils
 
-
 image_path = Path("dataset/images/image001.jpg")
 result_path = (
-    image_path.parents[1]
-    / "cachu"
-    / "images"
-    / f"{image_path.stem}.png"
+        image_path.parents[1]
+        / "cachu"
+        / "images"
+        / f"{image_path.stem}.png"
 )
 
 (
-    MaskImageUtils(
-        image_path=image_path,
-        cls=0,
-        erase_num=1,
-    )
-    .generate_from_seg()
-    .save_mask_bbox()
-    .expand_mask(dilate_kernel_size=5)
-    .repair()
-    .save(save_path=result_path)
+  MaskImageUtils(
+    image_path=image_path,
+    cls=0,
+    erase_num=1,
+  )
+  .generate_from_seg()
+  .save_mask_bbox_as_yolo()
+  .expand_mask(kernel_size=5)
+  .repair()
+  .save_result(result_path)
 )
 ```
 
@@ -629,7 +630,25 @@ result_path = (
 输入宽高补齐到 `8` 的倍数，当前实现不会自动裁剪回原始尺寸；当原图宽高不是
 `8` 的倍数时，输出尺寸可能增大。
 
-`save_mask_seg()` 当前仍是预留实现，尚未写出 YOLO 分割标签，不应作为公开接口使用。
+### 保存 mask 分割标注
+
+`save_mask_seg_as_yolo()` 会提取 mask 的所有有效外部轮廓，将轮廓坐标按原图宽高
+归一化，并保存为 YOLO 分割标签：
+
+```python
+(
+  MaskImageUtils(
+    image_path="dataset/images/image001.jpg",
+    cls=0,
+    erase_num=2,
+  )
+  .generate_from_seg()
+  .save_mask_seg_as_yolo()
+)
+```
+
+标签默认保存到 `dataset/cachu/labels/<image_stem>.txt`。多个互不相连的 mask
+轮廓会生成多行分割标注，也可以通过 `save_path` 指定其他保存位置。
 
 ## 数据增强
 
@@ -753,7 +772,6 @@ bash build.sh
   `class_name`。
 - `VOCAnnotationUtils.save_as_yolo()` 按单个 XML 内的类别名称排序并从 `0` 生成
   类别 ID，不维护跨文件的全局类别映射。
-- `MaskImageUtils.save_mask_seg()` 当前尚未完成，不应作为公开接口使用。
 - `XMLDocument.append_node()` 通过 XPath 查找父节点；存在多个同名父节点时会使用
   第一个匹配节点。需要操作多个同名节点时应使用带索引的路径，例如 `object[2]`。
 - 项目当前处于 Alpha 阶段，接口仍可能调整。

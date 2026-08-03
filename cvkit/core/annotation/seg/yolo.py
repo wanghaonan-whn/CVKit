@@ -1,28 +1,42 @@
+from typing import List
+
 from cvkit.core.annotation.io.txt import TxtDocument
 
 
 class YOLOSegmentationUtils(TxtDocument):
 
-    def polygon_2_bbox(self):
-        lines = self.readlines()
-        if len(lines) == 0:
-            raise ValueError(f"No polygon annotation in {self.path.name}")
-
-        bbox = []
-        for line in lines:
+    @staticmethod
+    def parse_label(lines: List[str]) -> list[tuple[int, list[tuple[float, float]]]]:
+        """
+            :return: [
+                      (0, [(0.1, 0.2), (0.3, 0.2), (0.3, 0.4)]),
+                      (1, [(0.5, 0.5), (0.6, 0.5), (0.6, 0.7)]),
+                    ]
+        """
+        labels = []
+        for line_number, line in enumerate(lines, start=1):
             values = line.strip().split()
-
+            if not values: continue
             if len(values) < 7:
-                raise ValueError("YOLO 多边形标签至少需要一个类别和三个坐标点")
-
-            coordinate_count = len(values) - 1
-            if coordinate_count % 2 != 0:
-                raise ValueError(f"多边形坐标数量必须为偶数，当前为：{coordinate_count}")
+                raise ValueError(f"Line {line_number}: at least three points are required")
+            if (len(values) - 1) % 2 != 0:
+                raise ValueError(f"Line {line_number}: coordinate count must be even")
 
             class_id = int(values[0])
             coordinates = [float(value) for value in values[1:]]
-            x_coordinates = coordinates[0::2]
-            y_coordinates = coordinates[1::2]
+            points = list(zip(coordinates[0::2], coordinates[1::2]))
+            labels.append((class_id, points))
+        return labels
+
+    def polygon_2_bbox(self):
+        annotations = self.parse_label(self.readlines())
+        if not annotations:
+            raise ValueError(f"No polygon annotation in {self.path.name}")
+
+        bbox = []
+        for class_id, points in annotations:
+            x_coordinates = [x for x, _ in points]
+            y_coordinates = [y for _, y in points]
 
             x_min = min(x_coordinates)
             y_min = min(y_coordinates)
@@ -41,4 +55,3 @@ class YOLOSegmentationUtils(TxtDocument):
         self.content = "\n".join(bbox) + "\n"
         self.write(self.content)
         return self
-

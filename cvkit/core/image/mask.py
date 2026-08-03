@@ -5,12 +5,17 @@ from PIL import Image
 from typing_extensions import Self
 from cvkit.core.annotation.hbb.voc import VOCAnnotationUtils
 from cvkit.core.annotation.io.txt import TxtDocument
+from cvkit.core.annotation.seg.yolo import YOLOSegmentationUtils
 from cvkit.core.image.io import ImageIO
 from simple_lama_inpainting import SimpleLama
+from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
 
 
 class MaskImageUtils(ImageIO):
-    # TODO:职责过多
+    """
+        process: generate -> save/expand -> repair -> save_result
+    """
+
     def __init__(
             self,
             image_path: str | Path,
@@ -18,111 +23,76 @@ class MaskImageUtils(ImageIO):
             cls: int | str = 0,
     ) -> None:
         """
-        :param image_path:
+        :param image_path: path
         :param cls: 擦除类别
         :param erase_num: 擦除个数
         """
         super().__init__(image_path)
-        self.ori_image = self.read().image
-        self.ori_image = cv2.cvtColor(self.ori_image, cv2.COLOR_BGR2RGB)
+        self.read()
+        if self.image is None:
+            raise ValueError(f"Failed to read image: {self.path}")
+        self.original_image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
+        self.mask: np.ndarray | None = None
+        self.result_image: Image.Image | np.ndarray | None = None
         self.erase_num = erase_num
         self.label_path = Path(image_path).parents[1] / "labels" / f"{Path(image_path).stem}.txt"
         self.cls = int(cls)
         if self.erase_num < 0:
             raise ValueError("erase_num must be >= 0")
+        self.__lama = SimpleLama()
 
-    def save_mask_bbox(self, class_name: str = "object"):
-        mask_bin = self.image
-        save_dir = self.path.parents[1] / "cachu"
-        contours, _ = cv2.findContours(mask_bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        if len(contours) == 0:
-            raise ValueError("contours == 0")
+    def save_mask_bbox_as_yolo(self, save_path=None):
+        height, width = self.original_image.shape[:2]
+        lines = []
 
-        bboxes = []
-        for contour in contours:
-            if cv2.contourArea(contour) <= 0:
-                continue
-            x, y, w, h = cv2.boundingRect(contour)
-            xmin, ymin = x, y
-            xmax, ymax = x + w, y + h
-            bboxes.append([xmin, ymin, xmax, ymax])
-        height, width = self.ori_image.shape[:2]
+        for xmin, ymin, xmax, ymax in self.to_bboxes():
+            x = (xmin + xmax) / 2 / width
+            y = (ymin + ymax) / 2 / height
+            w = (xmax - xmin) / width
+            h = (ymax - ymin) / height
+            lines.append(f"{self.cls} {x:.6f} {y:.6f} {w:.6f} {h:.6f}")
 
-        save_xml_path = save_dir / "xml" / f"{self.path.stem}.xml"
-        save_label_dir = save_dir / "labels"
-        (
-            VOCAnnotationUtils
-            .build_annotation(
-                f"{self.path.stem}.png",
-                (width, height),
-                bboxes,
-                save_xml_path,
-                class_name,
-            )
-            .save_as_yolo(save_label_dir)
-        )
+        save_path = self.path.parents[1] / "cachu/labels" / f"{self.path.stem}.txt" if save_path is None else save_path
+        TxtDocument.new(save_path).write("\n".join(lines) + "\n").save()
         return self
 
-    def save_mask_seg(self):
-        mask_bin = self.image
-        save_dir = self.path.parents[1] / "cachu"
-        height, width = self.ori_image.shape[:2]
-        contours, _ = cv2.findContours(mask_bin, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        if len(contours) == 0:
-            raise ValueError("contours == 0")
+    def save_mask_seg_as_yolo(self, save_path: str | Path | None = None):
+        height, width = self.original_image.shape[:2]
+        lines = []
 
-        labels = []
-        for contour in contours:
-            if cv2.contourArea(contour) <= 0:
-                raise ValueError("contourArea <= 0")
-            points = contour.reshape(-1, 2)
+        for polygon in self.to_polygons():
             coordinates = []
-            for x, y in points:
-                x_normalized = float(np.clip(x / width, 0.0, 1.0))
-                y_normalized = float(np.clip(y / height, 0.0, 1.0))
-                coordinates.append(f"{x_normalized:.6f}")
-                coordinates.append(f"{y_normalized:.6f}")
-            labels.append(f"{self.cls} {' '.join(coordinates)}")
+            for x, y in polygon:
+                coordinates.extend((f"{x / width:.6f}", f"{y / height:.6f}"))
+            lines.append(f"{self.cls} {' '.join(coordinates)}")
 
-        save_path = save_dir / "labels" / f"{self.path.stem}.txt"
-        TxtDocument(save_path).write("\n".join(labels) + "\n").save()
+        save_path = self.path.parents[1] / "cachu/labels" / f"{self.path.stem}.txt" if save_path is None else save_path
+        TxtDocument.new(save_path).write("\n".join(lines) + "\n").save()
         return self
 
-    def expand_mask(self, dilate_kernel_size: int):
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (dilate_kernel_size, dilate_kernel_size))
-        self.image = cv2.dilate(self.image, kernel, iterations=1)
+    def expand_mask(self, kernel_size: int):
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
+        self.mask = cv2.dilate(self.mask, kernel, iterations=1)
         return self
 
     def repair(self):
-        source = Image.fromarray(self.ori_image)
-        mask = Image.fromarray(self.image).convert("L")
-        self.image = SimpleLama()(source, mask)
+        source = Image.fromarray(self.original_image)
+        mask = Image.fromarray(self.mask).convert("L")
+        self.result_image = self.__lama(source, mask)
         return self
 
     def generate_from_seg(self):
         mask = np.zeros((self.height, self.width), dtype=np.uint8)
         lines = TxtDocument(self.label_path).readlines()
+        annotations = YOLOSegmentationUtils.parse_label(lines)
         if len(lines) == 0:
             raise ValueError("label_path must contain at least one line")
 
         polygons = []
-        for line in lines:
-            values = line.strip().split()
-            if int(values[0]) != self.cls: continue
-            if len(values) < 7:
-                raise ValueError(f"At least 7 words in label_path: {self.label_path}")
-            if (len(values) - 1) % 2 != 0:
-                raise ValueError(f"label num must OuShu")
-
-            coordinates = np.asarray(values[1:], dtype=np.float32).reshape(-1, 2)
-
-            coordinates[:, 0] *= self.width
-            coordinates[:, 1] *= self.height
-
-            coordinates[:, 0] = np.clip(coordinates[:, 0], 0, self.width - 1)
-            coordinates[:, 1] = np.clip(coordinates[:, 1], 0, self.height - 1)
-
-            polygons.append(np.rint(coordinates).astype(np.int32))
+        for class_id, points in annotations:
+            if class_id != self.cls:
+                continue
+            polygons.append(self.points_to_pixels(points))
 
         if self.erase_num > len(polygons):
             raise ValueError(f"erase_num={self.erase_num} 超过标注数量 {len(polygons)}")
@@ -131,22 +101,20 @@ class MaskImageUtils(ImageIO):
         for index in selected_indices:
             cv2.fillPoly(mask, [polygons[index]], 255)
 
-        self.image = mask
-        save_path = self.path.parents[1] / "mask" / f"{self.path.stem}.png"
-        super().save(mask, save_path)
+        self.mask = mask
         return self
 
     def generate_from_hbb(self):
         mask = np.zeros((self.height, self.width), dtype=np.uint8)
         lines = TxtDocument(self.label_path).readlines()
+        labels = YOLOAnnotationUtils.parse_label(lines)
         if len(lines) == 0:
             raise ValueError("label cat not be empty")
 
         bboxes = []
-        for line in lines:
-            values = line.strip().split()
-            class_id, x_center, y_center, box_width, box_height = values
-            if int(class_id) != self.cls: continue
+        for class_id, x_center, y_center, box_width, box_height in labels:
+            if class_id != self.cls:
+                continue
 
             x_center, y_center, box_width, box_height = float(x_center), float(y_center), float(box_width), float(box_height)
 
@@ -159,7 +127,6 @@ class MaskImageUtils(ImageIO):
             y1 = int(np.clip(y1, 0, self.height - 1))
             x2 = int(np.clip(x2, 0, self.width - 1))
             y2 = int(np.clip(y2, 0, self.height - 1))
-
             bboxes.append(((x1, y1), (x2, y2)))
 
         if self.erase_num > len(bboxes):
@@ -170,28 +137,20 @@ class MaskImageUtils(ImageIO):
             top_left, bottom_right = bboxes[index]
             cv2.rectangle(mask, top_left, bottom_right, color=255, thickness=-1)
 
-        self.image = mask
-        save_path = self.path.parents[1] / "mask" / f"{self.path.stem}.png"
-        super().save(mask, save_path)
+        self.mask = mask
         return self
 
     def crop_mask(self, save_dir: str | Path) -> Self:
         height, width = self.shape[:2]
         lines = TxtDocument(self.label_path).readlines()
+        annotations = YOLOSegmentationUtils.parse_label(lines)
 
-        for index, line in enumerate(lines):
-            values = line.strip().split()
-            if not values: continue
-
-            class_id = int(values[0])
+        save_dir = Path(save_dir)
+        save_dir.mkdir(parents=True, exist_ok=True)
+        for index, (class_id, normalized_points) in enumerate(annotations):
             if class_id != self.cls: continue
 
-            points = np.asarray(values[1:], dtype=np.float32).reshape(-1, 2)
-            points[:, 0] *= width
-            points[:, 1] *= height
-            points[:, 0] = np.clip(points[:, 0], 0, width - 1)
-            points[:, 1] = np.clip(points[:, 1], 0, height - 1)
-            points = np.rint(points).astype(np.int32)
+            points = self.points_to_pixels(normalized_points)
 
             alpha = np.zeros((height, width), dtype=np.uint8)
             cv2.fillPoly(alpha, [points], 255)
@@ -199,14 +158,57 @@ class MaskImageUtils(ImageIO):
             x, y, crop_width, crop_height = cv2.boundingRect(points)
             xmax = x + crop_width
             ymax = y + crop_height
-            rgb_crop = self.ori_image[y:ymax, x:xmax]
+            rgb_crop = self.original_image[y:ymax, x:xmax]
             alpha_crop = alpha[y:ymax, x:xmax]
             rgba_crop = np.dstack((rgb_crop, alpha_crop))
-
-            save_dir = Path(save_dir)
-            save_dir.mkdir(parents=True, exist_ok=True)
-            super().save(rgba_crop, save_path=save_dir / f"crop_seg_{index}.png")
+            super().save(Image.fromarray(rgba_crop), save_path=save_dir / f"crop_seg_{index}.png")
         return self
+
+    def save_mask(self, save_path: str | Path | None = None) -> Self:
+        save_path = self.path.parents[1] / "mask" / f"{self.path.stem}.png" if save_path is None else save_path
+        super().save(self.mask, save_path)
+        return self
+
+    def save_result(self, save_path: str | Path) -> Self:
+        super().save(self.result_image, save_path)
+        return self
+
+    def get_contours(self) -> list[np.ndarray]:
+        mask = self.mask
+        contours, _ = cv2.findContours(
+            mask.copy(),
+            cv2.RETR_EXTERNAL,
+            cv2.CHAIN_APPROX_SIMPLE,
+        )
+        contours = [c for c in contours if cv2.contourArea(c) > 0]
+
+        if not contours:
+            raise ValueError("No valid contours found")
+        return contours
+
+    def to_bboxes(self) -> list[list[int]]:
+        return [
+            [x, y, x + width, y + height]
+            for contour in self.get_contours()
+            for x, y, width, height in [cv2.boundingRect(contour)]
+        ]
+
+    def to_polygons(self) -> list[np.ndarray]:
+        return [
+            contour.reshape(-1, 2)
+            for contour in self.get_contours()
+            if len(contour.reshape(-1, 2)) >= 3
+        ]
+
+    def points_to_pixels(self, points: list[tuple[float, float]]) -> np.ndarray:
+        coordinates = np.asarray(points, dtype=np.float32)
+
+        coordinates[:, 0] *= self.width
+        coordinates[:, 1] *= self.height
+        coordinates[:, 0] = np.clip(coordinates[:, 0], 0, self.width - 1)
+        coordinates[:, 1] = np.clip(coordinates[:, 1], 0, self.height - 1)
+
+        return np.rint(coordinates).astype(np.int32)
 
 
 if __name__ == "__main__":
