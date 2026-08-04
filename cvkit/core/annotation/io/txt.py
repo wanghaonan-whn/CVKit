@@ -19,12 +19,6 @@ class TxtDocument(BaseDocument):
         self.content: str | None = None
         self.encoding = encoding
 
-    def __str__(self) -> str:
-        return self.content or ""
-
-    def __len__(self) -> int:
-        return len(self.content or "")
-
     @classmethod
     def new(cls, path: str | Path, encoding: str = "utf-8") -> Self:
         doc = cls(path, encoding)
@@ -72,5 +66,6 @@ class TxtDocument(BaseDocument):
 
 
 if __name__ == "__main__":
-    txt_path = r"D:\BaiduNetdiskDownload\Software-v7.5.1-c4180852-20251120\labels\Image00223_02 7c8e51c9-97c0-4886-b8ea-7be5762c0516.txt"
-    txtdoc = TxtDocument.new(txt_path).write("1").save()
+    txt_path = r"/mnt/FourT/classes.txt"
+    content = TxtDocument(txt_path).read()
+    print(content)

@@ -140,7 +140,7 @@ class MaskImageUtils(ImageIO):
         self.mask = mask
         return self
 
-    def crop_mask(self, save_dir: str | Path) -> Self:
+    def crop_mask(self, save_dir: str | Path, image_index: int = 0) -> Self:
         height, width = self.shape[:2]
         lines = TxtDocument(self.label_path).readlines()
         annotations = YOLOSegmentationUtils.parse_label(lines)
@@ -161,7 +161,7 @@ class MaskImageUtils(ImageIO):
             rgb_crop = self.original_image[y:ymax, x:xmax]
             alpha_crop = alpha[y:ymax, x:xmax]
             rgba_crop = np.dstack((rgb_crop, alpha_crop))
-            super().save(Image.fromarray(rgba_crop), save_path=save_dir / f"crop_seg_{index}.png")
+            super().save(Image.fromarray(rgba_crop), save_path=save_dir / f"crop_seg_{image_index}_{index}.png")
         return self
 
     def save_mask(self, save_path: str | Path | None = None) -> Self:
@@ -212,6 +212,7 @@ class MaskImageUtils(ImageIO):
 
 
 if __name__ == "__main__":
+    pass
     # from tqdm import tqdm
     #
     # image_dir = ""
@@ -226,6 +227,4 @@ if __name__ == "__main__":
     #         .repair()
     #         .save(save_path=result_path)
     #     )
-    MaskImageUtils(
-        image_path="/mnt/FourT/TV/项点/侧视丢失不可视/垂向油压减振器安装螺栓/test/images/7_1.png"
-    ).crop_mask(save_dir="")
+
