@@ -23,21 +23,21 @@ class Augmenter:
             return A.Compose(self.__transforms, bbox_params=A.BboxParams(format="yolo", label_fields=["labels"]))
         return A.Compose(self.__transforms)
 
-    def horizontal_flip(self, p=0.5) -> "Augmenter":
+    def horizontal_flip(self, p=0.25) -> "Augmenter":
         """ 左右翻转 """
         self.__transforms.append(A.HorizontalFlip(p=p))
         return self
 
-    def vertical_flip(self, p=0.5) -> "Augmenter":
+    def vertical_flip(self, p=0.25) -> "Augmenter":
         """ 上下翻转 """
         self.__transforms.append(A.VerticalFlip(p=p))
         return self
 
-    def rotate(self, limit=15, p=0.5) -> "Augmenter":
+    def rotate(self, limit=15, p=0.25) -> "Augmenter":
         self.__transforms.append(A.Rotate(limit=limit, p=p))
         return self
 
-    def brightness(self, brightness_limit=0.2, contrast_limit=0.2, p=0.5) -> "Augmenter":
+    def brightness(self, brightness_limit=0.3, contrast_limit=0.1, p=0.25) -> "Augmenter":
         """
             亮度对比度
             Args:
@@ -55,41 +55,33 @@ class Augmenter:
         )
         return self
 
-    def blur(self, blur_limit=3, p=0.3) -> "Augmenter":
-        """
-            随机模糊。
-            Args:
-                blur_limit:
-                    模糊核大小
-                    - int，例如 ``3``。
-                    - tuple，例如 ``(3, 7)``。
-        """
+    def blur(self, blur_limit=3, p=0.25) -> "Augmenter":
         self.__transforms.append(A.Blur(blur_limit=blur_limit, p=p))
         return self
 
-    def gauss_noise(self, std_range=(0.03, 0.08), p=0.5) -> "Augmenter":
+    def gauss_noise(self, std_range=(0.0088,0.0152), p=0.25) -> "Augmenter":
         self.__transforms.append(A.GaussNoise(std_range=std_range, p=p))
         return self
 
-    def image_compression(self, quality_range=(40, 100), p=0.8) -> "Augmenter":
+    def image_compression(self, quality_range=(40, 100), p=0.25) -> "Augmenter":
         self.__transforms.append(A.ImageCompression(quality_range=quality_range, p=p))
         return self
 
-    def clahe(self, clip_limit=4.0, tile_grid_size=(8, 8), p=0.5):
+    def clahe(self, clip_limit=4.0, tile_grid_size=(8, 8), p=0.25):
         self.__transforms.append(
             A.CLAHE(clip_limit=clip_limit, tile_grid_size=tile_grid_size, p=p)
         )
         return self
 
-    def to_gray(self) -> "Augmenter":
-        self.__transforms.append(A.ToGray(p=0.2))
+    def to_gray(self, p=0.25) -> "Augmenter":
+        self.__transforms.append(A.ToGray(p=p))
         return self
 
-    def motion_blur(self, blur_limit=5, p=0.3) -> "Augmenter":
+    def motion_blur(self, blur_limit=5, p=0.25) -> "Augmenter":
         self.__transforms.append(A.MotionBlur(blur_limit=blur_limit, p=p))
         return self
 
-    def one_of_sharp_blur(self, p=0.4) -> "Augmenter":
+    def one_of_sharp_blur(self, p=0.25) -> "Augmenter":
         self.__transforms.append(
             A.OneOf(
                 [
@@ -104,10 +96,10 @@ class Augmenter:
 
     def one_of_affine(
             self,
-            x_scale: tuple[float, float] = (0.8, 1.2),
-            y_scale: tuple[float, float] = (0.9, 1.1),
+            x_scale: tuple[float, float] = (0.85, 1.15),
+            y_scale: tuple[float, float] = (0.95, 1.05),
             p=0.5,
-            sub_p=1,
+            sub_p=0.25,
     ) -> "Augmenter":
         """ 拉伸组合增强 """
         self.__transforms.append(
