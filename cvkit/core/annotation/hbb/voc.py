@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import List
+from typing import List, Mapping
+from cvkit.core.annotation.io.txt import TxtDocument
 from cvkit.core.annotation.io.xmlio import XmlDocument
 
 
@@ -109,26 +110,28 @@ class VOCAnnotationUtils(XmlDocument):
         bh = (ymax - ymin) / h
         return x, y, bw, bh
 
-    def save_as_yolo(self, save_path: str | Path | None = None) -> VOCAnnotationUtils:
-        #  TODO:在每个文件中自行生成类别映射，可能导致不同文件的类别 ID 不一致。类别映射最好从外部传入。
+    def save_as_yolo(
+            self,
+            classes_mapping: Mapping[str, int],
+            save_path: str | Path | None = None,
+    ) -> VOCAnnotationUtils:
         if save_path is None:
             save_path = self.path.parents[1].joinpath("labels")
         else:
             save_path = Path(save_path)
         class_names = self.get_voc_label_names()
-        class_id = {name: i for i, name in enumerate(sorted(set(class_names)))}
+        unknown_classes = set(class_names) - set(classes_mapping)
+        if unknown_classes:
+            raise ValueError(f"Classes missing from class_mapping: {sorted(unknown_classes)}")
 
-        yolo = []
+        lines = []
         image_size, bboxes = self.parse_voc()
         for bbox in bboxes:
-            x, y, bw, bh = VOCAnnotationUtils.voc_to_yolo(image_size, bbox)
-            cls_id = class_id[bbox[4]]
-            line = f"{cls_id} {x:.6f} {y:.6f} {bw:.6f} {bh:.6f}\n"
-            yolo.append(line)
-        save_txt_path = save_path.joinpath(self.path.stem).with_suffix(".txt")
-        save_txt_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(save_txt_path, "w") as f:
-            f.writelines(yolo)
+            x, y, width, height = self.voc_to_yolo(image_size,bbox)
+            class_id = classes_mapping[bbox[4]]
+            lines.append(f"{class_id} {x:.6f} {y:.6f} {width:.6f} {height:.6f}\n")
+        save_txt_path = save_path / f"{self.path.stem}.txt"
+        TxtDocument.new(save_txt_path).write("".join(lines)).save()
         return self
 
     def save_as_json(
