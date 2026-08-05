@@ -1,10 +1,9 @@
 import math
 import random
-from pathlib import Path
-from typing import List
-
 import cv2
 import numpy as np
+from pathlib import Path
+from typing import List
 from PIL import Image
 from cvkit.augment.aug import Augmenter
 from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
@@ -42,7 +41,7 @@ class CopyPaste:
         for _ in range(num_pase):
             label_choice = random.choice(labels)
             labels.remove(label_choice)
-            x, y, w, h = YOLOAnnotationUtils.yolo_to_xy((width, height), *label_choice[1:])
+            x, y, w, h = YOLOAnnotationUtils.yolo_to_xywh((width, height), *label_choice[1:])
             if x < 10 or y < 10 or x > width - 10 or y > height - 10:
                 continue
 
@@ -71,7 +70,7 @@ class CopyPaste:
         txt.save()
         image_np = np.array(image_bg)
         transform_ori = (
-            Augmenter(self.image_path)
+            Augmenter()
             .brightness()
             .gauss_noise()
             .build()

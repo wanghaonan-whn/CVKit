@@ -1,8 +1,5 @@
 import albumentations as A
 import cv2
-from concurrent.futures import ProcessPoolExecutor
-from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
-from cvkit.core.annotation.io.txt import TxtDocument
 
 
 class Augmenter:
@@ -120,49 +117,3 @@ class Augmenter:
             ], p=p)
         )
         return self
-
-    def augment(self, worker: int = 1) -> "Augmenter":
-        image_dir = self.path / "images"
-        save_dir = self.path / "aug"
-
-        self.save_image_dir = save_dir / "images"
-        self.save_label_dir = save_dir / "labels"
-        self.save_image_dir.mkdir(parents=True, exist_ok=True)
-        self.save_label_dir.mkdir(parents=True, exist_ok=True)
-
-        image_paths = image_dir.iterdir()
-        if worker <= 1:
-            for image_path in image_paths:
-                self._mp_augment(image_path)
-        else:
-            with ProcessPoolExecutor(max_workers=worker) as executor:
-                list(executor.map(self._mp_augment, image_paths))
-
-        return self
-
-    def _mp_augment(self, image_path) -> None:
-        image = cv2.imread(str(image_path))
-        if image is None: return
-
-        label_path = self.path / "labels" / f"{image_path.stem}.txt"
-        if not label_path.exists():
-            print(f"warning: {label_path} does not exist")
-            return
-
-        lines = YOLOAnnotationUtils(label_path).readlines()
-        labels = [label[0] for label in YOLOAnnotationUtils.parse_label(lines)]
-        bboxes = [label[1:] for label in YOLOAnnotationUtils.parse_label(lines)]
-        transform = self.build(bbox=True)
-
-        for index in range(self.repeat):
-            augmented = transform(image=image, bboxes=bboxes, labels=labels)
-            save_stem = f"{image_path.stem}-aug{index}"
-            save_image_path = self.save_image_dir / f"{save_stem}{image_path.suffix}"
-            save_label_path = self.save_label_dir / f"{save_stem}.txt"
-
-            cv2.imwrite(str(save_image_path), augmented["image"])
-            content = "".join(
-                f"{int(cls)} {x:.6f} {y:.6f} {w:.6f} {h:.6f}\n"
-                for (x, y, w, h), cls in zip(augmented["bboxes"], augmented["labels"])
-            )
-            TxtDocument(save_label_path).write(content).save()

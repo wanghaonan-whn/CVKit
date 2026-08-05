@@ -299,7 +299,7 @@ from cvkit.core.annotation.hbb.voc import VOCAnnotationUtils
 
 ```python
 (
-  VOCAnnotationUtils.build_annotation(
+  VOCAnnotationUtils.build(
     img_name="image001.jpg",
     img_size=(1920, 1080),
     bboxes=[

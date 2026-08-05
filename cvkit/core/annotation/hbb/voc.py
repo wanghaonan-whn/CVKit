@@ -12,7 +12,7 @@ class VOCAnnotationUtils(XmlDocument):
     """
 
     @classmethod
-    def build_annotation(
+    def build(
             cls, img_name: str, img_size: tuple[int, int], bboxes: List[List[int]],
             save_path: str | Path, class_name: str = "object", depth: int = 1,
     ) -> "VOCAnnotationUtils":
@@ -191,4 +191,4 @@ if __name__ == "__main__":
     # vocutils.rename_voc_label("person1", "person")
     # print(vocutils.get_voc_label_names())
     # print(vocutils.is_label_in_voc("person1"))
-    VOCAnnotationUtils.build_annotation("1.jpg", (100, 100), (2, 3, 4, 5), "./1.xml").save()
+    VOCAnnotationUtils.build("1.jpg", (100, 100), (2, 3, 4, 5), "./1.xml").save()

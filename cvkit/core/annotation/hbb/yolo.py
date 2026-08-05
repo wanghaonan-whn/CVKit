@@ -26,10 +26,8 @@ class YOLOAnnotationUtils(TxtDocument):
         """
             Args:
                 mapping: 类别映射，例如 {0: 1, 1: 0}。
-
             Returns:
                 链式调用
-
             Examples:
                 >>> YOLOAnnotationUtils("").remap_classes({0: 1})
                 >>> YOLOAnnotationUtils("").remap_classes({0: 1, 1: 0})
@@ -37,7 +35,6 @@ class YOLOAnnotationUtils(TxtDocument):
         mapping = {int(k): int(v) for k, v in mapping.items()}
 
         new_lines = []
-
         for line in self.readlines():
             parts = line.split()
 
@@ -97,7 +94,7 @@ class YOLOAnnotationUtils(TxtDocument):
         ]
 
     @staticmethod
-    def yolo_to_xy(size, x, y, w, h):
+    def yolo_to_xywh(size, x, y, w, h):
         x = x * size[0]
         w = w * size[0]
         y = y * size[1]
