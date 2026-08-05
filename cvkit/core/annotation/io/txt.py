@@ -19,16 +19,19 @@ class TxtDocument(BaseDocument):
         self.content: str | None = None
         self.encoding = encoding
 
+    def __str__(self):
+        return self.content
+
     @classmethod
     def new(cls, path: str | Path, encoding: str = "utf-8") -> Self:
         doc = cls(path, encoding)
         doc.content = ""
         return doc
 
-    def read(self) -> str | None:
+    def read(self) -> Self:
         with open(self.path, "r", encoding=self.encoding) as f:
             self.content = f.read()
-        return self.content
+        return self
 
     def readlines(self, keepends: bool = True) -> list[str]:
         if self.content is None:
@@ -67,3 +70,5 @@ class TxtDocument(BaseDocument):
 
 if __name__ == "__main__":
     txt_path = r"/mnt/FourT/classes.txt"
+    txt = TxtDocument(txt_path).read()
+    print(txt)

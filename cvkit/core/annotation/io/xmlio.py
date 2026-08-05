@@ -7,21 +7,25 @@ from cvkit.core.annotation.io.abc.base import BaseDocument
 
 
 class XmlDocument(BaseDocument):
-    def __init__(self, path: str | Path, root_tag: str | None = None) -> None:
+    def __init__(self, path: str | Path) -> None:
         super().__init__(path)
-        if root_tag is None:
-            self.__tree = ET.parse(self.path)
-            self.__root = self.__tree.getroot()
-        else:
-            self.__root = ET.Element(root_tag)
-            self.__tree = ET.ElementTree(self.__root)
+        self.__tree: ET.ElementTree | None = None
+        self.__root: ET.Element | None = None
+
+    def __str__(self):
+        return ET.tostring(self.__root, encoding="unicode")
 
     @classmethod
     def new(cls, path: str | Path, root_tag: str = "root"):
-        return cls(path, root_tag=root_tag)
+        document = cls(path)
+        document.__root = ET.Element(root_tag)
+        document.__tree = ET.ElementTree(document.__root)
+        return document
 
-    def read(self) -> str:
-        return ET.tostring(self.__root, encoding="unicode")
+    def read(self) -> Self:
+        self.__tree = ET.parse(self.path)
+        self.__root = self.__tree.getroot()
+        return self
 
     @property
     def root(self) -> ET.Element:
@@ -127,5 +131,6 @@ if __name__ == "__main__":
     # print(xmldoc.update_text("a", "1"))
     # print(xmldoc.append_node("a", "1"))
     # xmldoc.update_text("size/width", "486").save()
-    xml_path2 = "./1.xml"
-    XmlDocument.new(xml_path2).save()
+    xml_path = "/mnt/FourT/TV/内部测试/HSBK_成昆线成都上行_CR200J1B_20250223_141847_8/HSBK_成昆线成都上行_CR200J1B_20250223_141847_8/xml/1_1.xml"
+    xml = XmlDocument(xml_path).read()
+    print(xml)

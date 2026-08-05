@@ -3,7 +3,6 @@ import numpy as np
 from pathlib import Path
 from PIL import Image
 from typing_extensions import Self
-from cvkit.core.annotation.hbb.voc import VOCAnnotationUtils
 from cvkit.core.annotation.io.txt import TxtDocument
 from cvkit.core.annotation.seg.yolo import YOLOSegmentationUtils
 from cvkit.core.image.io import ImageIO
