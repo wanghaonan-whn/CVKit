@@ -67,5 +67,3 @@ class TxtDocument(BaseDocument):
 
 if __name__ == "__main__":
     txt_path = r"/mnt/FourT/classes.txt"
-    content = TxtDocument(txt_path).read()
-    print(content)
