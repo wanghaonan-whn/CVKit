@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Mapping
+from pathlib import Path
 from typing import List
+
+from cvkit.core.annotation.hbb.voc import VOCAnnotationUtils
 from cvkit.core.annotation.io.txt import TxtDocument
 
 
@@ -100,3 +103,59 @@ class YOLOAnnotationUtils(TxtDocument):
         y = y * size[1]
         h = h * size[1]
         return x, y, w, h
+
+    @staticmethod
+    def yolo_to_voc(size, x, y, w, h):
+        center_x = x * size[0]
+        center_y = y * size[1]
+        w = w * size[0]
+        h = h * size[1]
+
+        xmin = center_x - w / 2
+        ymin = center_y - h / 2
+        xmax = center_x + w / 2
+        ymax = center_y + h / 2
+        return xmin, ymin, xmax, ymax
+
+    def save_as_voc(
+            self,
+            img_name: str,
+            img_size: tuple[int, int],
+            classes_mapping: Mapping[int, str],
+            save_dir: str | Path | None = None,
+            depth: int = 1
+    ) -> YOLOAnnotationUtils:
+        if save_dir is None:
+            save_dir = self.path.parents[1].joinpath("xml")
+        else:
+            save_dir = Path(save_dir)
+
+        save_path = save_dir / f"{self.path.stem}.xml"
+        document = VOCAnnotationUtils.build(
+            img_name=img_name,
+            img_size=img_size,
+            bboxes=[],
+            save_path=save_path,
+            depth=depth,
+        )
+        unknown_class_ids = set(self.count_classes().keys()) - set(classes_mapping)
+        if unknown_class_ids:
+            raise ValueError(f"Classes missing from classes_mapping: {sorted(unknown_class_ids)}")
+
+        labels = self.parse_label(self.readlines())
+        for class_id, x, y, box_width, box_height in labels:
+            xmin, ymin, xmax, ymax = self.yolo_to_voc(img_size, x, y, box_width, box_height)
+            bbox = [int(xmin), int(ymin), int(xmax), int(ymax)]
+            document.append_object(class_name=classes_mapping[int(class_id)], bbox=bbox)
+
+        document.save()
+        return self
+
+
+if __name__ == "__main__":
+    txt_path = "/mnt/FourT/test/labels/1.txt"
+    YOLOAnnotationUtils(txt_path).save_as_voc(
+        img_name="test",
+        img_size=(7644, 430),
+        classes_mapping={0: "abc"},
+    )

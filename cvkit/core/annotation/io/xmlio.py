@@ -82,13 +82,7 @@ class XmlDocument(BaseDocument):
             raise KeyError("Not found node {}".format(xpath))
         return self
 
-    def append_node(
-            self,
-            xpath: str,
-            tag: str,
-            text: str | None = None,
-            attrib: dict[str, str] | None = None
-    ) -> XmlDocument:
+    def append_node(self, xpath: str, tag: str, text: str | None = None, attrib: dict[str, str] | None = None) -> XmlDocument:
         """在指定节点下追加子节点"""
         parent = self.find(xpath)
         if parent is None:

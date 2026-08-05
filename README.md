@@ -99,7 +99,7 @@ lines = document.readlines()
 )
 ```
 
-不传 `save_path` 时保存到对象原路径。
+不传 `save_dir` 时保存到对象原路径。
 
 ## XML 文档
 
@@ -648,7 +648,7 @@ result_path = (
 ```
 
 标签默认保存到 `dataset/cachu/labels/<image_stem>.txt`。多个互不相连的 mask
-轮廓会生成多行分割标注，也可以通过 `save_path` 指定其他保存位置。
+轮廓会生成多行分割标注，也可以通过 `save_dir` 指定其他保存位置。
 
 ## 数据增强
 

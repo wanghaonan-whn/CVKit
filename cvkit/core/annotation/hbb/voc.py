@@ -33,25 +33,29 @@ class VOCAnnotationUtils(XmlDocument):
             .append_node(".", "segmented", text="0")
         )
         for index, bbox in enumerate(bboxes, start=1):
-            xmin, ymin, xmax, ymax = bbox
-            document.append_node(".", "object")
-            object_path = f"object[{index}]"
-            bndbox_path = f"{object_path}/bndbox"
-            (
-                document
-                .append_node(object_path, "name", text=class_name)
-                .append_node(object_path, "pose", text="Unspecified")
-                .append_node(object_path, "truncated", text="0")
-                .append_node(object_path, "difficult", text="0")
-
-                # add bndbox
-                .append_node(object_path, "bndbox")
-                .append_node(bndbox_path, "xmin", text=str(xmin))
-                .append_node(bndbox_path, "ymin", text=str(ymin))
-                .append_node(bndbox_path, "xmax", text=str(xmax))
-                .append_node(bndbox_path, "ymax", text=str(ymax))
-            )
+            document.append_object(class_name, bbox)
         return document
+
+    def append_object(self, class_name: str, bbox: list[int]) -> VOCAnnotationUtils:
+        xmin, ymin, xmax, ymax = bbox
+
+        self.append_node(".", "object")
+        object_path = f"object"
+        bndbox_path = f"{object_path}/bndbox"
+
+        (
+            self
+            .append_node(object_path, "name", text=class_name)
+            .append_node(object_path, "pose", text="Unspecified")
+            .append_node(object_path, "truncated", text="0")
+            .append_node(object_path, "difficult", text="0")
+            .append_node(object_path, "bndbox")
+            .append_node(bndbox_path, "xmin", text=str(xmin))
+            .append_node(bndbox_path, "ymin", text=str(ymin))
+            .append_node(bndbox_path, "xmax", text=str(xmax))
+            .append_node(bndbox_path, "ymax", text=str(ymax))
+        )
+        return self
 
     def get_voc_label_names(self) -> list[str]:
         return [
@@ -127,7 +131,7 @@ class VOCAnnotationUtils(XmlDocument):
         lines = []
         image_size, bboxes = self.parse_voc()
         for bbox in bboxes:
-            x, y, width, height = self.voc_to_yolo(image_size,bbox)
+            x, y, width, height = self.voc_to_yolo(image_size, bbox)
             class_id = classes_mapping[bbox[4]]
             lines.append(f"{class_id} {x:.6f} {y:.6f} {width:.6f} {height:.6f}\n")
         save_txt_path = save_path / f"{self.path.stem}.txt"
