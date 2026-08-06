@@ -27,7 +27,6 @@ class MaskImageUtils(ImageIO):
             :param erase_num: 擦除个数
         """
         super().__init__(image_path)
-        self.read()
         if self.image is None:
             raise ValueError(f"Failed to read image: {self.path}")
         self.original_image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
@@ -231,19 +230,19 @@ class MaskImageUtils(ImageIO):
 
 
 if __name__ == "__main__":
-    pass
-    # from tqdm import tqdm
-    #
-    # image_dir = ""
-    # for image_path in tqdm(Path(image_dir).iterdir()):
-    #     root = image_path.parents[1]
-    #     result_path = root / "cachu" / "images" / f"{image_path.stem}.png"
-    #     (
-    #         MaskImageUtils(image_path, erase_num=1)
-    #         .generate_from_seg()
-    #         .save_mask_seg()
-    #         .expand_mask(1)
-    #         .repair()
-    #         .save(save_path=result_path)
-    #     )
+    # pass
+    from tqdm import tqdm
 
+    image_dir = ""
+    for image_path in tqdm(Path(image_dir).iterdir()):
+        root = image_path.parents[1]
+        result_path = root / "cachu" / "images" / f"{image_path.stem}.png"
+        (
+            MaskImageUtils(image_path, erase_num=1)
+            .read("cv2", "L")
+            .generate_from_seg()
+            .save_mask_seg_as_yolo()
+            .expand_mask(1)
+            .repair()
+            .save(save_path=result_path)
+        )

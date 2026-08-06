@@ -1,8 +1,10 @@
+import numpy as np
 import cv2
 from pathlib import Path
-
-import numpy as np
 from PIL import Image
+from typing import Literal
+
+from typing_extensions import Self
 
 from cvkit.core.image.abc.base import BaseImage
 
@@ -13,21 +15,30 @@ class ImageIO(BaseImage):
         self.image = None
         self.save_path = None
 
-    def read(self) -> "ImageIO":
-        self.image = cv2.imread(str(self.path))
+    def read(
+            self,
+            load_mode: Literal["cv2", "PIL"] = "cv2",
+            load_type: Literal["RGB", "L", "RGBA"] = "RGB",
+    ) -> Self:
+        cv_type = {
+            "RGB": cv2.IMREAD_COLOR,
+            "L": cv2.IMREAD_GRAYSCALE,
+            "RGBA": cv2.IMREAD_UNCHANGED,
+        }
+        if load_mode == "cv2":
+            self.image = cv2.imread(str(self.path), cv_type[load_type])
+        elif load_mode == "PIL":
+            self.image = Image.open(self.path).convert(load_type)
         return self
 
     @property
-    def height(self):
-        return self.image.shape[0]
-
-    @property
-    def width(self):
-        return self.image.shape[1]
-
-    @property
     def shape(self):
-        return self.image.shape
+        if isinstance(self.image, Image.Image):
+            return self.image.size
+        elif isinstance(self.image, np.ndarray):
+            return self.image.shape
+        else:
+            raise TypeError("Image type not supported.")
 
     def save(self, image=None, save_path: str | Path | None = None):
         path = Path(save_path) if save_path is not None else self.path
