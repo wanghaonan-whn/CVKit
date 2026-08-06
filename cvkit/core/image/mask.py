@@ -105,9 +105,8 @@ class MaskImageUtils(ImageIO):
 
     def generate_from_hbb(self):
         mask = np.zeros((self.height, self.width), dtype=np.uint8)
-        lines = TxtDocument(self.label_path).readlines()
-        labels = YOLOAnnotationUtils.parse_label(lines)
-        if len(lines) == 0:
+        labels = YOLOAnnotationUtils(self.label_path).parse_label()
+        if len(labels) == 0:
             raise ValueError("label cat not be empty")
 
         bboxes = []
@@ -165,8 +164,7 @@ class MaskImageUtils(ImageIO):
 
     def crop_mask_from_hbb(self, save_dir: str | Path, image_index: int = 0) -> Self:
         height, width = self.shape[:2]
-        lines = TxtDocument(self.label_path).readlines()
-        annotations = YOLOAnnotationUtils.parse_label(lines)
+        annotations = YOLOAnnotationUtils(self.label_path).parse_label()
 
         save_dir = Path(save_dir)
         save_dir.mkdir(parents=True, exist_ok=True)

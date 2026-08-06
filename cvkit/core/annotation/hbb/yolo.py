@@ -14,10 +14,9 @@ class YOLOAnnotationUtils(TxtDocument):
         YOLO 标签工具类 V1.0
     """
 
-    @staticmethod
-    def parse_label(lines: List) -> List[List[float | int]]:
+    def parse_label(self) -> List[List[float | int]]:
         labels = []
-        for line in lines:
+        for line in self.readlines():
             parts = line.strip().split()
             if not parts:
                 continue
@@ -88,12 +87,12 @@ class YOLOAnnotationUtils(TxtDocument):
             if line.strip()
         )
 
-    def get_classes_box(self, class_ids: int | List[int]) -> List[str]:
+    def get_classes_box(self, class_ids: int | List[int]) -> List[List[float | int]]:
         target_class_ids = {class_ids} if isinstance(class_ids, int) else set(class_ids)
         return [
             line
-            for line in self.readlines()
-            if line.strip() and int(line.split()[0]) in target_class_ids
+            for line in self.parse_label()
+            if line[0] in target_class_ids
         ]
 
     @staticmethod
@@ -142,7 +141,7 @@ class YOLOAnnotationUtils(TxtDocument):
         if unknown_class_ids:
             raise ValueError(f"Classes missing from classes_mapping: {sorted(unknown_class_ids)}")
 
-        labels = self.parse_label(self.readlines())
+        labels = self.parse_label()
         for class_id, x, y, box_width, box_height in labels:
             xmin, ymin, xmax, ymax = self.yolo_to_voc(img_size, x, y, box_width, box_height)
             bbox = [int(xmin), int(ymin), int(xmax), int(ymax)]

@@ -50,8 +50,7 @@ class YOLODatasetAugmenter:
             print(f"warning: {label_path} does not exist")
             return
 
-        lines = YOLOAnnotationUtils(label_path).readlines()
-        parsed_labels = YOLOAnnotationUtils.parse_label(lines)
+        parsed_labels = YOLOAnnotationUtils(label_path).parse_label()
 
         classes = [label[0] for label in parsed_labels]
         bboxes = [label[1:] for label in parsed_labels]

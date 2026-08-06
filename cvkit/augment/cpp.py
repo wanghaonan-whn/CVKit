@@ -26,9 +26,8 @@ class CopyPaste:
         self.save_path = self.image_path.parents[1] / "cp4qq1"
 
     def paste_with_bbox(self, n, pases: List, scale: tuple[float, float] = (1.0, 1.1)) -> None:
-        lines = YOLOAnnotationUtils(self.label_path).get_classes_box(self.class_id)
-        num_pase = math.ceil(len(lines) / 2)
-        labels = YOLOAnnotationUtils.parse_label(lines)
+        labels = YOLOAnnotationUtils(self.label_path).get_classes_box(self.class_id)
+        num_pase = math.ceil(len(labels) / 2)
         image_bg = Image.open(self.image_path)
         width, height = image_bg.size
 
