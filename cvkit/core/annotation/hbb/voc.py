@@ -198,4 +198,8 @@ if __name__ == "__main__":
     # vocutils.rename_voc_label("person1", "person")
     # print(vocutils.get_voc_label_names())
     # print(vocutils.is_label_in_voc("person1"))
-    VOCAnnotationUtils.build("1.jpg", (100, 100), (2, 3, 4, 5), "./1.xml").save()
+    # VOCAnnotationUtils.build("1.jpg", (100, 100), (2, 3, 4, 5), "./1.xml").save()
+    path = "/mnt/4t/test/xml"
+    iter_path = Path(path).glob("*.xml")
+    for xml_path in iter_path:
+        VOCAnnotationUtils(xml_path).read().save_as_yolo({"0": 0})

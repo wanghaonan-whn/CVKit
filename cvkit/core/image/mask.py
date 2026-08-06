@@ -12,7 +12,7 @@ from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
 
 class MaskImageUtils(ImageIO):
     """
-        process: generate -> save/expand -> repair -> save_result
+        Process: generate -> save/expand -> repair -> save_result
     """
 
     def __init__(
@@ -22,9 +22,9 @@ class MaskImageUtils(ImageIO):
             cls: int | str = 0,
     ) -> None:
         """
-        :param image_path: path
-        :param cls: 擦除类别
-        :param erase_num: 擦除个数
+            :param image_path: path
+            :param cls: 擦除类别
+            :param erase_num: 擦除个数
         """
         super().__init__(image_path)
         self.read()
@@ -139,7 +139,7 @@ class MaskImageUtils(ImageIO):
         self.mask = mask
         return self
 
-    def crop_mask(self, save_dir: str | Path, image_index: int = 0) -> Self:
+    def crop_mask_from_seg(self, save_dir: str | Path, image_index: int = 0) -> Self:
         height, width = self.shape[:2]
         lines = TxtDocument(self.label_path).readlines()
         annotations = YOLOSegmentationUtils.parse_label(lines)
@@ -160,7 +160,29 @@ class MaskImageUtils(ImageIO):
             rgb_crop = self.original_image[y:ymax, x:xmax]
             alpha_crop = alpha[y:ymax, x:xmax]
             rgba_crop = np.dstack((rgb_crop, alpha_crop))
-            super().save(Image.fromarray(rgba_crop), save_path=save_dir / f"crop_seg_{image_index}_{index}.png")
+            super().save(Image.fromarray(rgba_crop), save_path=save_dir / f"crop_{self.path.stem}_{image_index}_{index}.png")
+        return self
+
+    def crop_mask_from_hbb(self, save_dir: str | Path, image_index: int = 0) -> Self:
+        height, width = self.shape[:2]
+        lines = TxtDocument(self.label_path).readlines()
+        annotations = YOLOAnnotationUtils.parse_label(lines)
+
+        save_dir = Path(save_dir)
+        save_dir.mkdir(parents=True, exist_ok=True)
+        for index, (class_id, *xywh) in enumerate(annotations):
+            if class_id != self.cls: continue
+            xmin, ymin, xmax, ymax = YOLOAnnotationUtils.yolo_to_voc((width, height), *xywh)
+            xmin = int(round(xmin))
+            ymin = int(round(ymin))
+            xmax = int(round(xmax))
+            ymax = int(round(ymax))
+
+            rgb_crop = self.original_image[ymin:ymax, xmin:xmax]
+            alpha_crop = np.full(rgb_crop.shape[:2], 255, dtype=np.uint8)
+            rgba_crop = np.dstack((rgb_crop, alpha_crop))
+            save_path = (save_dir / f"crop_{self.path.stem}_{image_index}_{index}.png")
+            super().save(Image.fromarray(rgba_crop), save_path=save_path)
         return self
 
     def save_mask(self, save_path: str | Path | None = None) -> Self:

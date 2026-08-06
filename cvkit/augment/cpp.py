@@ -37,47 +37,50 @@ class CopyPaste:
         save_image_path.mkdir(parents=True, exist_ok=True)
         save_label_path.mkdir(parents=True, exist_ok=True)
 
-        txt = TxtDocument.new(save_label_path / f'guoche-{n}-{self.image_path.stem}-{self.class_id}-nump{num_pase}.txt')
-        for _ in range(num_pase):
-            label_choice = random.choice(labels)
-            labels.remove(label_choice)
-            x, y, w, h = YOLOAnnotationUtils.yolo_to_xywh((width, height), *label_choice[1:])
-            if x < 10 or y < 10 or x > width - 10 or y > height - 10:
-                continue
+        for image_index in range(n):
+            image_bg = Image.open(self.image_path).convert("RGB")
+            current_paste_count = min(n, len(labels))
+            selected_labels = random.sample(labels, k=current_paste_count)
+            file_stem = f"guoche-{image_index}-{self.image_path.stem}-{self.class_id}-nump{current_paste_count}"
+            txt = TxtDocument.new(save_label_path / f'{file_stem}.txt')
+            for label_choice in selected_labels:
+                x, y, w, h = YOLOAnnotationUtils.yolo_to_xywh((width, height), *label_choice[1:])
+                if x < 10 or y < 10 or x > width - 10 or y > height - 10:
+                    continue
 
-            pattern = random.choice(pases)
-            img_xpn = Image.open(pattern)
-            r1 = random.uniform(*scale)
+                pattern = random.choice(pases)
+                img_xpn = Image.open(pattern)
+                r1 = random.uniform(*scale)
 
-            w = max(10, w)
-            h = max(10, h)
-            w = min(13, w)
-            h = min(13, h)
+                w = max(10, w)
+                h = max(10, h)
+                w = min(13, w)
+                h = min(13, h)
 
-            p1 = round(w * r1)
-            p2 = round(h * r1)
+                p1 = round(w * r1)
+                p2 = round(h * r1)
 
-            img_xpn = img_xpn.resize((p1, p2))
-            img_xpn = self.augment_pase(pattern, img_xpn)
-            w_p, h_p = img_xpn.size
-            x_p = x - (w_p / 2)
-            y_p = y - (h_p / 2)
+                img_xpn = img_xpn.resize((p1, p2))
+                img_xpn = self.augment_pase(pattern, img_xpn)
+                w_p, h_p = img_xpn.size
+                x_p = x - (w_p / 2)
+                y_p = y - (h_p / 2)
 
-            image_bg.paste(img_xpn, (round(x_p), round(y_p)), img_xpn)
+                image_bg.paste(img_xpn, (round(x_p), round(y_p)), img_xpn)
 
-            txt.append(f"0 {label_choice[1]} {label_choice[2]} {label_choice[3]} {label_choice[4]}\n")
+                txt.append(f"0 {label_choice[1]} {label_choice[2]} {label_choice[3]} {label_choice[4]}\n")
 
-        txt.save()
-        image_np = np.array(image_bg)
-        transform_ori = (
-            Augmenter()
-            .brightness()
-            .gauss_noise()
-            .build()
-        )
-        augmented_image_np = transform_ori(image=image_np)['image']
-        img_xpn = Image.fromarray(augmented_image_np)
-        img_xpn.save(save_image_path / f'guoche-{n}-{self.image_path.stem}-{self.class_id}-nump{num_pase}.png')
+            txt.save()
+            image_np = np.array(image_bg)
+            transform_ori = (
+                Augmenter()
+                .brightness()
+                .gauss_noise()
+                .build()
+            )
+            augmented_image_np = transform_ori(image=image_np)['image']
+            img_xpn = Image.fromarray(augmented_image_np)
+            img_xpn.save(save_image_path / f'guoche-{n}-{self.image_path.stem}-{self.class_id}-nump{num_pase}.png')
 
     @staticmethod
     def convert_coords_to_yolo(class_id, xmin, ymin, xmax, ymax, img_width, img_height):
@@ -97,14 +100,6 @@ class CopyPaste:
 
     @staticmethod
     def augment_pase(pattern, img_xpn):
-        # transform = (
-        #     Augmenter(pattern)
-        #     .one_of_sharp_blur()
-        #     .brightness()
-        #     .gauss_noise()
-        #     .build()
-        # )
-
         img_pase = np.array(img_xpn)
         alpha = img_pase[..., -1]
         contours, _ = cv2.findContours(alpha, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
@@ -121,6 +116,9 @@ class CopyPaste:
 
 
 if __name__ == "__main__":
-    pattern_path = Path("/mnt/FourT/pattern专用TV")
+    pattern_path = Path("/mnt/FourT/pattern专用TV/裂缝")
     pases = [p for p in pattern_path.rglob("*.png")]
-    CopyPaste("/mnt/FourT/test/cachu/images/1.png").paste_with_bbox(10, pases)
+    (
+        CopyPaste("/mnt/4t/test/images/209p_20250826005320_1_1--zxglsds_0.png")
+        .paste_with_bbox(10, pases)
+    )

@@ -1,6 +1,8 @@
 import cv2
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
+
+from cvkit.augment.aug import Augmenter
 from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
 from cvkit.core.annotation.io.txt import TxtDocument
 
@@ -31,14 +33,14 @@ class YOLODatasetAugmenter:
 
         if worker <= 1:
             for image_path in image_paths:
-                self.__augment_one(image_path)
+                self._augment_one(image_path)
         else:
             with ProcessPoolExecutor(max_workers=worker) as executor:
-                list(executor.map(self.__augment_one, image_paths))
+                list(executor.map(self._augment_one, image_paths))
 
         return self
 
-    def __augment_one(self, image_path: Path) -> None:
+    def _augment_one(self, image_path: Path) -> None:
         image = cv2.imread(str(image_path))
         if image is None:
             return
@@ -55,7 +57,7 @@ class YOLODatasetAugmenter:
         bboxes = [label[1:] for label in parsed_labels]
 
         for index in range(self.repeat):
-            result = self.transform(image=image,bboxes=bboxes,labels=classes)
+            result = self.transform(image=image, bboxes=bboxes, labels=classes)
 
             save_stem = f"{image_path.stem}-aug{index}"
             save_image_path = self.save_image_dir / f"{save_stem}{image_path.suffix}"
@@ -70,3 +72,19 @@ class YOLODatasetAugmenter:
                 in zip(result["bboxes"], result["labels"])
             )
             TxtDocument.new(save_label_path).write(content).save()
+
+
+if __name__ == "__main__":
+    pass
+    # path = ""
+    # transform = (
+    #     Augmenter()
+    #     .gauss_noise(p=0.5)
+    #     .one_of_affine()
+    #     .to_gray(p=1)
+    #     .build(bbox=True)
+    # )
+    # YOLODatasetAugmenter(
+    #     path,
+    #     transform=transform
+    # ).run(worker=10)
