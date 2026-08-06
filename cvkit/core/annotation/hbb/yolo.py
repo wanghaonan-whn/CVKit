@@ -83,27 +83,6 @@ class YOLOAnnotationUtils(TxtDocument):
             if line[0] in target_class_ids
         ]
 
-    @staticmethod
-    def yolo_to_xywh(size, x, y, w, h):
-        x = x * size[0]
-        w = w * size[0]
-        y = y * size[1]
-        h = h * size[1]
-        return x, y, w, h
-
-    @staticmethod
-    def yolo_to_voc(size, x, y, w, h):
-        center_x = x * size[0]
-        center_y = y * size[1]
-        w = w * size[0]
-        h = h * size[1]
-
-        xmin = center_x - w / 2
-        ymin = center_y - h / 2
-        xmax = center_x + w / 2
-        ymax = center_y + h / 2
-        return xmin, ymin, xmax, ymax
-
     def save_as_voc(
             self,
             img_name: str,
@@ -137,6 +116,27 @@ class YOLOAnnotationUtils(TxtDocument):
 
         document.save()
         return self
+
+    @staticmethod
+    def yolo_to_xywh(size, x, y, w, h):
+        x = x * size[0]
+        w = w * size[0]
+        y = y * size[1]
+        h = h * size[1]
+        return x, y, w, h
+
+    @staticmethod
+    def yolo_to_voc(size, x, y, w, h):
+        center_x = x * size[0]
+        center_y = y * size[1]
+        w = w * size[0]
+        h = h * size[1]
+
+        xmin = center_x - w / 2
+        ymin = center_y - h / 2
+        xmax = center_x + w / 2
+        ymax = center_y + h / 2
+        return xmin, ymin, xmax, ymax
 
 
 if __name__ == "__main__":

@@ -57,20 +57,6 @@ class VOCAnnotationUtils(XmlDocument):
         )
         return self
 
-    def get_voc_label_names(self) -> list[str]:
-        return [
-            node.text
-            for node in self.findall("object/name")
-            if node.text is not None
-        ]
-
-    def is_label_in_voc(self, keyword: str) -> bool:
-        """关键词查找对应的xml文件"""
-        if keyword in self.get_voc_label_names():
-            return True
-        else:
-            return False
-
     def parse_voc(self) -> tuple[tuple, List]:
         """
             解析xml标注文件
@@ -97,22 +83,26 @@ class VOCAnnotationUtils(XmlDocument):
             )
         return (width, height), parse_list
 
+    def get_voc_label_names(self) -> list[str]:
+        return [
+            node.text
+            for node in self.findall("object/name")
+            if node.text is not None
+        ]
+
+    def is_label_in_voc(self, keyword: str) -> bool:
+        """关键词查找对应的xml文件"""
+        if keyword in self.get_voc_label_names():
+            return True
+        else:
+            return False
+
     def rename_voc_label(self, new_label: str, old_label: str) -> VOCAnnotationUtils:
         """重命名标签"""
         for node in self.findall("object/name"):
             if node.text == old_label:
                 node.text = new_label
         return self
-
-    @staticmethod
-    def voc_to_yolo(image_size, bbox) -> tuple:
-        w, h = image_size
-        xmin, ymin, xmax, ymax, name = bbox
-        x = (xmin + xmax) / 2 / w
-        y = (ymin + ymax) / 2 / h
-        bw = (xmax - xmin) / w
-        bh = (ymax - ymin) / h
-        return x, y, bw, bh
 
     def save_as_yolo(
             self,
@@ -186,6 +176,16 @@ class VOCAnnotationUtils(XmlDocument):
         with open(f"{save_json_path}.json", "w") as f:
             json.dump(json_content, f, ensure_ascii=False, indent=2)
         return self
+
+    @staticmethod
+    def voc_to_yolo(image_size, bbox) -> tuple:
+        w, h = image_size
+        xmin, ymin, xmax, ymax, name = bbox
+        x = (xmin + xmax) / 2 / w
+        y = (ymin + ymax) / 2 / h
+        bw = (xmax - xmin) / w
+        bh = (ymax - ymin) / h
+        return x, y, bw, bh
 
 
 if __name__ == "__main__":
