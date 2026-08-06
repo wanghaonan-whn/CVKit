@@ -34,20 +34,13 @@ class YOLOAnnotationUtils(TxtDocument):
                 >>> YOLOAnnotationUtils("").remap_classes({0: 1})
                 >>> YOLOAnnotationUtils("").remap_classes({0: 1, 1: 0})
          """
-        mapping = {int(k): int(v) for k, v in mapping.items()}
+        class_mapping = {int(k): int(v) for k, v in mapping.items()}
 
         new_lines = []
-        for line in self.readlines():
-            parts = line.split()
-
-            if not parts:
-                new_lines.append(line)
-                continue
-
-            cls = int(parts[0])
-            if cls in mapping:
-                parts[0] = str(mapping[cls])
-            new_lines.append(" ".join(parts) + "\n")
+        for label in self.parse_label():
+            class_id = int(label[0])
+            label[0] = class_mapping.get(class_id, class_id)
+            new_lines.append(" ".join(map(str, label)) + "\n")
 
         self.content = "".join(new_lines)
         return self
@@ -57,16 +50,11 @@ class YOLOAnnotationUtils(TxtDocument):
         src_cls = int(src_cls)
 
         new_lines = []
-        for line in self.readlines():
-            parts = line.split()
-
-            if not parts:
-                new_lines.append(line)
+        for label in self.parse_label():
+            if label[0] == src_cls:
                 continue
+            new_lines.append(" ".join(map(str, label)) + "\n")
 
-            if int(parts[0]) == src_cls:
-                continue
-            new_lines.append(line)
         self.content = "".join(new_lines)
         return self
 
