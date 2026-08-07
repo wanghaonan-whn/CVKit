@@ -14,7 +14,15 @@ class YOLOAnnotationUtils(TxtDocument):
         YOLO 标签工具类 V1.0
     """
 
+    @classmethod
+    def build(cls, labels: List[List[int | float]], save_path: str | Path) -> YOLOAnnotationUtils:
+        document = cls.new(save_path)
+        for class_id, x, y, w, h in labels:
+            document.append(f"{int(class_id)} {float(x):.6f} {float(y):.6f} {float(w):.6f} {float(h):.6f}\n")
+        return document
+
     def parse_label(self) -> List[List[float | int]]:
+        """ 解析 """
         labels = []
         for line in self.readlines():
             parts = line.strip().split()
@@ -23,6 +31,11 @@ class YOLOAnnotationUtils(TxtDocument):
             cls, x, y, w, h = parts
             labels.append([int(cls), float(x), float(y), float(w), float(h)])
         return labels
+
+    def is_label_in_yolo(self, class_ids: List[str | int]) -> bool:
+        """标签查找对应的yolo标签"""
+        class_ids = set(map(int, class_ids))
+        return any(label[0] in class_ids for label in self.parse_label())
 
     def remap_classes(self, mapping: Mapping[int | str, int | str]) -> YOLOAnnotationUtils:
         """
@@ -45,13 +58,26 @@ class YOLOAnnotationUtils(TxtDocument):
         self.content = "".join(new_lines)
         return self
 
-    def del_cls(self, src_cls: str | int) -> YOLOAnnotationUtils:
-        """ 删除类别 """
-        src_cls = int(src_cls)
+    def retain_cls(self, retain: List[str | int]) -> YOLOAnnotationUtils:
+        """ 保留 """
+        retain = list(map(int, retain))
 
         new_lines = []
         for label in self.parse_label():
-            if label[0] == src_cls:
+            if label[0] not in retain:
+                continue
+            new_lines.append(" ".join(map(str, label)) + "\n")
+
+        self.content = "".join(new_lines)
+        return self
+
+    def del_cls(self, delete: List[str | int]) -> YOLOAnnotationUtils:
+        """ 删除类别 """
+        delete = list(map(int, delete))
+
+        new_lines = []
+        for label in self.parse_label():
+            if label[0] in delete:
                 continue
             new_lines.append(" ".join(map(str, label)) + "\n")
 
@@ -59,24 +85,28 @@ class YOLOAnnotationUtils(TxtDocument):
         return self
 
     def remove_empty(self) -> YOLOAnnotationUtils:
+        """ 删空 """
         if len(self.readlines()) == 0:
             self.path.unlink()
         return self
 
     def remove_duplicate(self) -> YOLOAnnotationUtils:
+        """ 删重 """
         unique = list(dict.fromkeys(self.readlines()))
         self.content = "".join(unique)
         return self
 
     def count_classes(self) -> Counter[int]:
+        """ 计数 """
         return Counter(
             int(line.split()[0])
             for line in self.readlines()
             if line.strip()
         )
 
-    def get_classes_box(self, class_ids: int | List[int]) -> List[List[float | int]]:
-        target_class_ids = {class_ids} if isinstance(class_ids, int) else set(class_ids)
+    def get_classes_box(self, class_ids: int | List[str | int]) -> List[List[float | int]]:
+        """ 获取指定cls """
+        target_class_ids = {class_ids} if isinstance(class_ids, int) else set(list(map(int, class_ids)))
         return [
             line
             for line in self.parse_label()
@@ -119,6 +149,7 @@ class YOLOAnnotationUtils(TxtDocument):
 
     @staticmethod
     def yolo_to_xywh(size, x, y, w, h):
+        """ yolo转绝对坐标 """
         x = x * size[0]
         w = w * size[0]
         y = y * size[1]
@@ -127,6 +158,7 @@ class YOLOAnnotationUtils(TxtDocument):
 
     @staticmethod
     def yolo_to_voc(size, x, y, w, h):
+        """ yolo转voc """
         center_x = x * size[0]
         center_y = y * size[1]
         w = w * size[0]
