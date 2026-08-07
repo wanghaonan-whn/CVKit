@@ -71,7 +71,6 @@ class Datasets:
 
         self.__copy_dataset(train_labels, img_train_dir, label_train_dir)
         self.__copy_dataset(val_labels, img_val_dir, label_val_dir)
-
         return self
 
     def __copy_dataset(self, labels: list[Path], img_save_dir: Path, label_save_dir: Path) -> None:
@@ -102,4 +101,4 @@ class Datasets:
 
 
 if __name__ == "__main__":
-    Datasets("").split()
+    Datasets("/mnt/FourT/TV/项点/定位/纵向牵引拉杆/datasets2", ratio=0.5).split()
