@@ -37,15 +37,15 @@ class YOLOAnnotationUtils(TxtDocument):
         class_ids = set(map(int, class_ids))
         return any(label[0] in class_ids for label in self.parse_label())
 
-    def remap_classes(self, mapping: Mapping[int | str, int | str]) -> YOLOAnnotationUtils:
+    def remap_cls(self, mapping: Mapping[int | str, int | str]) -> YOLOAnnotationUtils:
         """
             Args:
                 mapping: 类别映射，例如 {0: 1, 1: 0}。
             Returns:
                 链式调用
             Examples:
-                >>> YOLOAnnotationUtils("").remap_classes({0: 1})
-                >>> YOLOAnnotationUtils("").remap_classes({0: 1, 1: 0})
+                >>> YOLOAnnotationUtils("").remap_cls({0: 1})
+                >>> YOLOAnnotationUtils("").remap_cls({0: 1, 1: 0})
          """
         class_mapping = {int(k): int(v) for k, v in mapping.items()}
 
@@ -172,9 +172,14 @@ class YOLOAnnotationUtils(TxtDocument):
 
 
 if __name__ == "__main__":
-    txt_path = "/mnt/FourT/test/labels/1.txt"
-    YOLOAnnotationUtils(txt_path).save_as_voc(
-        img_name="test",
-        img_size=(7644, 430),
-        classes_mapping={0: "abc"},
-    )
+    # txt_path = "/mnt/FourT/test/labels/1.txt"
+    # YOLOAnnotationUtils(txt_path).save_as_voc(
+    #     img_name="test",
+    #     img_size=(7644, 430),
+    #     classes_mapping={0: "abc"},
+    # )
+    txt_dir = Path("/mnt/FourT/TV/项点/定位/纵向牵引拉杆/datasets2/labels")
+    for txt_file in txt_dir.glob("*.txt"):
+        labels = YOLOAnnotationUtils(txt_file).parse_label()
+        if len(labels) == 2:
+            print(txt_file)
