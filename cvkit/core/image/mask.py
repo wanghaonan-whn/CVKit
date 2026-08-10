@@ -14,6 +14,7 @@ class MaskImageUtils(ImageIO):
     """
         Process: generate -> save/expand -> repair -> save_result
     """
+    __lama: SimpleLama | None = None
 
     def __init__(
             self,
@@ -37,7 +38,6 @@ class MaskImageUtils(ImageIO):
         self.cls = int(cls)
         if self.erase_num < 0:
             raise ValueError("erase_num must be >= 0")
-        self.__lama = SimpleLama()
 
     def save_mask_bbox_as_yolo(self, save_path=None):
         height, width = self.original_image.shape[:2]
@@ -74,9 +74,11 @@ class MaskImageUtils(ImageIO):
         return self
 
     def repair(self):
+        if MaskImageUtils.__lama is None:
+            MaskImageUtils.__lama = SimpleLama()
         source = Image.fromarray(self.original_image)
         mask = Image.fromarray(self.mask).convert("L")
-        self.result_image = self.__lama(source, mask)
+        self.result_image = MaskImageUtils.__lama(source, mask)
         return self
 
     def generate_from_seg(self):
@@ -138,7 +140,6 @@ class MaskImageUtils(ImageIO):
         return self
 
     def crop_mask_from_seg(self, save_dir: str | Path, image_index: int = 0) -> Self:
-        height, width = self.shape[:2]
         lines = TxtDocument(self.label_path).readlines()
         annotations = YOLOSegmentationUtils.parse_label(lines)
 
@@ -149,7 +150,7 @@ class MaskImageUtils(ImageIO):
 
             points = self.points_to_pixels(normalized_points)
 
-            alpha = np.zeros((height, width), dtype=np.uint8)
+            alpha = np.zeros((self.height, self.width), dtype=np.uint8)
             cv2.fillPoly(alpha, [points], 255)
 
             x, y, crop_width, crop_height = cv2.boundingRect(points)
@@ -162,14 +163,13 @@ class MaskImageUtils(ImageIO):
         return self
 
     def crop_mask_from_hbb(self, save_dir: str | Path, image_index: int = 0) -> Self:
-        height, width = self.shape[:2]
         annotations = YOLOAnnotationUtils(self.label_path).parse_label()
 
         save_dir = Path(save_dir)
         save_dir.mkdir(parents=True, exist_ok=True)
         for index, (class_id, *xywh) in enumerate(annotations):
             if class_id != self.cls: continue
-            xmin, ymin, xmax, ymax = YOLOAnnotationUtils.yolo_to_voc((width, height), *xywh)
+            xmin, ymin, xmax, ymax = YOLOAnnotationUtils.yolo_to_voc((self.width, self.height), *xywh)
             xmin = int(round(xmin))
             ymin = int(round(ymin))
             xmax = int(round(xmax))

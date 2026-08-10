@@ -49,15 +49,6 @@ class ImageIO(BaseImage):
             return self.image.shape[0]
         raise ValueError("Image has not been loaded")
 
-    @property
-    def shape(self):
-        if isinstance(self.image, Image.Image):
-            return self.image.size
-        elif isinstance(self.image, np.ndarray):
-            return self.image.shape
-        else:
-            raise TypeError("Image type not supported.")
-
     def save(self, image=None, save_path: str | Path | None = None):
         path = Path(save_path) if save_path is not None else self.path
         target = image if image is not None else self.image
