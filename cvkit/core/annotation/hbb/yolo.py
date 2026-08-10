@@ -35,7 +35,7 @@ class YOLOAnnotationUtils(TxtDocument):
     def is_label_in_yolo(self, class_ids: List[str | int]) -> bool:
         """标签查找对应的yolo标签"""
         class_ids = set(map(int, class_ids))
-        return any(label[0] in class_ids for label in self.parse_label())
+        return all(label[0] in class_ids for label in self.parse_label())
 
     def remap_cls(self, mapping: Mapping[int | str, int | str]) -> YOLOAnnotationUtils:
         """
@@ -72,7 +72,7 @@ class YOLOAnnotationUtils(TxtDocument):
         return self
 
     def del_cls(self, delete: List[str | int]) -> YOLOAnnotationUtils:
-        """ 删除类别 """
+        """ 删除 """
         delete = list(map(int, delete))
 
         new_lines = []

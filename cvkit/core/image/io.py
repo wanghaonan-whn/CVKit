@@ -29,7 +29,25 @@ class ImageIO(BaseImage):
             self.image = cv2.imread(str(self.path), cv_type[load_type])
         elif load_mode == "PIL":
             self.image = Image.open(self.path).convert(load_type)
+        else:
+            raise ValueError(f"Unsupported load mode: {load_mode}")
         return self
+
+    @property
+    def width(self) -> int:
+        if isinstance(self.image, Image.Image):
+            return self.image.width
+        if isinstance(self.image, np.ndarray):
+            return self.image.shape[1]
+        raise ValueError("Image has not been loaded")
+
+    @property
+    def height(self) -> int:
+        if isinstance(self.image, Image.Image):
+            return self.image.height
+        if isinstance(self.image, np.ndarray):
+            return self.image.shape[0]
+        raise ValueError("Image has not been loaded")
 
     @property
     def shape(self):
@@ -42,16 +60,19 @@ class ImageIO(BaseImage):
 
     def save(self, image=None, save_path: str | Path | None = None):
         path = Path(save_path) if save_path is not None else self.path
-        image = image if image is not None else self.image
-        if isinstance(image, Image.Image):
-            image = np.array(image)
-            if image.ndim == 3 and image.shape[2] == 3:
-                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-            # 如果是 RGBA
-            elif image.ndim == 3 and image.shape[2] == 4:
-                image = cv2.cvtColor(image, cv2.COLOR_RGBA2BGRA)
+        target = image if image is not None else self.image
+
+        if target is None:
+            raise ValueError("No image to save")
         path.parent.mkdir(parents=True, exist_ok=True)
-        cv2.imwrite(str(path), image)
+
+        if isinstance(target, Image.Image):
+            target.save(path)
+        elif isinstance(target, np.ndarray):
+            if not cv2.imwrite(str(path), target):
+                raise IOError(f"Failed to save image: {path}")
+        else:
+            raise TypeError(f"Unsupported image type: {type(target)}")
         return self
 
 
