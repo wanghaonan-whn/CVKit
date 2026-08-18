@@ -104,6 +104,78 @@ class YOLOAnnotationUtils(TxtDocument):
             if line.strip()
         )
 
+    def merge(
+            self,
+            other: str | Path | YOLOAnnotationUtils,
+            class_priority: Mapping[int | str, int],
+            prefer_other: bool = False
+    ):
+        """
+              合并另一个 YOLO 标签文件。
+
+              Args:
+                  other:
+                      另一个标签文件或 YOLOAnnotationUtils 对象。
+                  class_priority:
+                      类别优先级，数值越大越优先。
+                      例如 {0: 1, 1: 10} 表示冲突时保留类别 1。
+                  prefer_other:
+                      优先级相同时，是否保留 other 中的框。
+        """
+        priorities = {
+            int(class_id): int(priority)
+            for class_id, priority in class_priority.items()
+        }
+
+        if isinstance(other, YOLOAnnotationUtils):
+            other_document = other
+        else:
+            other_document = YOLOAnnotationUtils(other)
+
+        merged_labels = [label.copy() for label in self.parse_label()]
+
+        for incoming_label in other_document.parse_label():
+            conflict_indices = [
+                index
+                for index, existing_label in enumerate(merged_labels)
+                if self.is_bbox_iou(existing_label, incoming_label)
+            ]
+
+            if not conflict_indices:
+                merged_labels.append(incoming_label.copy())
+                continue
+
+            incoming_priority = priorities.get(int(incoming_label[0]), 0)
+
+            highest_existing_priority = max(
+                priorities.get(int(merged_labels[index][0]), 0)
+                for index in conflict_indices
+            )
+
+            should_keep_incoming = (
+                    incoming_priority > highest_existing_priority or
+                    (prefer_other and incoming_priority == highest_existing_priority)
+            )
+
+            if not should_keep_incoming:
+                continue
+
+            for index in reversed(conflict_indices):
+                merged_labels.pop(index)
+
+            merged_labels.append(incoming_label.copy())
+
+        self.content = "".join(
+            f"{int(class_id)} "
+            f"{float(x):.6f} "
+            f"{float(y):.6f} "
+            f"{float(width):.6f} "
+            f"{float(height):.6f}\n"
+            for class_id, x, y, width, height
+            in merged_labels
+        )
+        return self
+
     def get_classes_box(self, class_ids: int | List[str | int]) -> List[List[float | int]]:
         """ 获取指定cls """
         target_class_ids = {class_ids} if isinstance(class_ids, int) else set(list(map(int, class_ids)))
@@ -169,6 +241,25 @@ class YOLOAnnotationUtils(TxtDocument):
         xmax = center_x + w / 2
         ymax = center_y + h / 2
         return xmin, ymin, xmax, ymax
+
+    @staticmethod
+    def is_bbox_iou(first: List[int | float], second: List[int | float]) -> bool:
+        _, x1, y1, w1, h1 = first
+        _, x2, y2, w2, h2 = second
+
+        first_xmin = x1 - w1 / 2
+        first_ymin = y1 - h1 / 2
+        first_xmax = x1 + w1 / 2
+        first_ymax = y1 + h1 / 2
+
+        second_xmin = x2 - w2 / 2
+        second_ymin = y2 - h2 / 2
+        second_xmax = x2 + w2 / 2
+        second_ymax = y2 + h2 / 2
+
+        intersection_width = min(first_xmax, second_xmax) - max(first_xmin, second_xmin)
+        intersection_height = min(first_ymax, second_ymax) - max(first_ymin, second_ymin)
+        return intersection_width > 0 and intersection_height > 0
 
 
 if __name__ == "__main__":
