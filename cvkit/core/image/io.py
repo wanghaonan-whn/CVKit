@@ -3,9 +3,7 @@ import cv2
 from pathlib import Path
 from PIL import Image
 from typing import Literal
-
 from typing_extensions import Self
-
 from cvkit.core.image.abc.base import BaseImage
 
 
