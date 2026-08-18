@@ -50,6 +50,8 @@ class Datasets:
     def split(self) -> "Datasets":
         label_dir = Path(self.data_dir) / "labels"
         save_dir = Path(self.data_dir) / "split"
+        if save_dir.exists():
+            raise FileExistsError(f"Dir already exists: {save_dir}")
 
         img_train_dir = save_dir / "train" / "images"
         label_train_dir = save_dir / "train" / "labels"
@@ -63,30 +65,33 @@ class Datasets:
         if not labels:
             raise FileNotFoundError(f"No label files found in {label_dir}")
 
+        image_mapping = {
+            image_file.stem: image_file
+            for image_file in self.image_dir.iterdir()
+            if (image_file.is_file() and image_file.suffix.lower() in self.IMAGE_EXTS)
+        }
         random.shuffle(labels)
 
         num_train = int(len(labels) * self.ratio)
         train_labels = labels[:num_train]
         val_labels = labels[num_train:]
 
-        self.__copy_dataset(train_labels, img_train_dir, label_train_dir)
-        self.__copy_dataset(val_labels, img_val_dir, label_val_dir)
+        self.__copy_dataset(train_labels, image_mapping, img_train_dir, label_train_dir)
+        self.__copy_dataset(val_labels, image_mapping, img_val_dir, label_val_dir)
         return self
 
-    def __copy_dataset(self, labels: list[Path], img_save_dir: Path, label_save_dir: Path) -> None:
+    @staticmethod
+    def __copy_dataset(
+            labels: list[Path],
+            image_mapping: dict[str, Path],
+            img_save_dir: Path,
+            label_save_dir: Path
+    ) -> None:
         for label_file in labels:
-            shutil.copy2(label_file, label_save_dir / label_file.name)
-            stem = label_file.stem
-            image_file = next(
-                (
-                    image_file
-                    for image_file in self.image_dir.glob(f"{stem}.*")
-                    if image_file.suffix.lower() in self.IMAGE_EXTS
-                ),
-                None,
-            )
+            image_file = image_mapping.get(label_file.stem)
             if image_file is None:
-                raise FileNotFoundError(f"Image not found: {stem}")
+                raise FileNotFoundError(f"Image not found: {label_file.stem}")
+            shutil.copy2(label_file, label_save_dir / label_file.name)
             shutil.copy2(image_file, img_save_dir / image_file.name)
 
     def __find_image(self, stem: str) -> Path | None:
