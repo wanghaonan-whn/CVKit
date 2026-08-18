@@ -25,19 +25,27 @@ class CopyPaste:
         self.label_path = self.image_path.parents[1] / "labels" / f"{self.image_path.stem}.txt"
         self.save_path = self.image_path.parents[1] / "cp4qq1"
 
-    def paste_with_bbox(self, n, pases: List, scale: tuple[float, float] = (1.0, 1.1)) -> None:
+    def paste_with_bbox(self, n: int, pases: List, scale: tuple[float, float] = (1.0, 1.1)) -> None:
         labels = YOLOAnnotationUtils(self.label_path).get_classes_box(self.class_id)
-        num_pase = math.ceil(len(labels) / 2)
-        image_bg = Image.open(self.image_path)
-        width, height = image_bg.size
 
         save_image_path = self.save_path / "images"
         save_label_path = self.save_path / "labels"
         save_image_path.mkdir(parents=True, exist_ok=True)
         save_label_path.mkdir(parents=True, exist_ok=True)
 
+        with Image.open(self.image_path) as image:
+            original_image = image.convert("RGB")
+        width, height = original_image.size
+
+        transform_ori = (
+            Augmenter()
+            .brightness()
+            .gauss_noise()
+            .build()
+        )
+
         for image_index in range(n):
-            image_bg = Image.open(self.image_path).convert("RGB")
+            image_bg = original_image.copy()
             current_paste_count = min(n, len(labels))
             selected_labels = random.sample(labels, k=current_paste_count)
             file_stem = f"guoche-{image_index}-{self.image_path.stem}-{self.class_id}-nump{current_paste_count}"
@@ -71,15 +79,10 @@ class CopyPaste:
 
             txt.save()
             image_np = np.array(image_bg)
-            transform_ori = (
-                Augmenter()
-                .brightness()
-                .gauss_noise()
-                .build()
-            )
+
             augmented_image_np = transform_ori(image=image_np)['image']
             img_xpn = Image.fromarray(augmented_image_np)
-            img_xpn.save(save_image_path / f'guoche-{n}-{self.image_path.stem}-{self.class_id}-nump{num_pase}.png')
+            img_xpn.save(save_image_path / f'{file_stem}.png')
 
     @staticmethod
     def convert_coords_to_yolo(class_id, xmin, ymin, xmax, ymax, img_width, img_height):
