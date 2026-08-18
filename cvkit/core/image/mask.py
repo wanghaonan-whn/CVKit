@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from typing import Literal
 from pathlib import Path
 from PIL import Image
 from typing_extensions import Self
@@ -28,9 +29,7 @@ class MaskImageUtils(ImageIO):
             :param erase_num: 擦除个数
         """
         super().__init__(image_path)
-        if self.image is None:
-            raise ValueError(f"Failed to read image: {self.path}")
-        self.original_image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
+        self.original_image: np.ndarray | None = None
         self.mask: np.ndarray | None = None
         self.result_image: Image.Image | np.ndarray | None = None
         self.erase_num = erase_num
@@ -38,6 +37,19 @@ class MaskImageUtils(ImageIO):
         self.cls = int(cls)
         if self.erase_num < 0:
             raise ValueError("erase_num must be >= 0")
+
+    def read(self, load_mode: Literal["cv2", "PIL"] = "cv2", load_type: Literal["RGB", "L", "RGBA"] = "RGB") -> Self:
+        super().read(load_mode, load_type)
+
+        if isinstance(self.image, Image.Image):
+            self.original_image = np.asarray(self.image.convert("RGB"))
+        elif self.image.ndim == 2:
+            self.original_image = cv2.cvtColor(self.image, cv2.COLOR_GRAY2RGB)
+        elif self.image.shape[2] == 4:
+            self.original_image = cv2.cvtColor(self.image, cv2.COLOR_BGRA2RGBA)
+        else:
+            self.original_image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
+        return self
 
     def save_mask_bbox_as_yolo(self, save_path=None):
         height, width = self.original_image.shape[:2]
