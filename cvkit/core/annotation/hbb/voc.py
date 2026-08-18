@@ -40,7 +40,8 @@ class VOCAnnotationUtils(XmlDocument):
         xmin, ymin, xmax, ymax = bbox
 
         self.append_node(".", "object")
-        object_path = f"object"
+        object_index = len(self.findall("object"))
+        object_path = f"object[{object_index}]"
         bndbox_path = f"{object_path}/bndbox"
 
         (
