@@ -6,16 +6,14 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 class DatasetSplitter:
-    def __init__(self, dataset: Dataset, ratio: float = 0.9) -> None:
+    def __init__(self, dataset: Dataset) -> None:
+        self.dataset = dataset
+
+    def split(self, ratio: float = 0.9, max_workers: int = 8) -> None:
         if not 0 < ratio < 1:
             raise ValueError("ratio must be between 0 and 1")
 
-        self.dataset = dataset
-        self.ratio = ratio
-
-    def split(self, max_workers: int = 8) -> None:
         save_dir = self.dataset.data_dir / "split"
-
         if save_dir.exists():
             raise FileExistsError(f"Dir already exists: {save_dir}")
 
@@ -33,7 +31,7 @@ class DatasetSplitter:
             raise FileNotFoundError(f"No label files found in {self.dataset.label_dir}")
 
         random.shuffle(labels)
-        num_train = int(len(labels) * self.ratio)
+        num_train = int(len(labels) * ratio)
 
         train_labels = labels[:num_train]
         val_labels = labels[num_train:]
