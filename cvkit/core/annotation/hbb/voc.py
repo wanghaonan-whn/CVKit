@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import List, Mapping
@@ -36,7 +34,7 @@ class VOCAnnotationUtils(XmlDocument):
             document.append_object(class_name, bbox)
         return document
 
-    def append_object(self, class_name: str, bbox: list[int]) -> VOCAnnotationUtils:
+    def append_object(self, class_name: str, bbox: list[int]) -> "VOCAnnotationUtils":
         xmin, ymin, xmax, ymax = bbox
 
         self.append_node(".", "object")

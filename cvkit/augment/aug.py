@@ -20,7 +20,7 @@ class Augmenter:
 
     def build(self, bbox=False):
         if bbox:
-            return A.Compose(self.__transforms, bbox_params=A.BboxParams(format="yolo", label_fields=["labels"]))
+            return A.Compose(self.__transforms, bbox_params=A.BboxParams(format="yolo", label_fields=["labels"], clip=True))
         return A.Compose(self.__transforms)
 
     def horizontal_flip(self, p=0.25) -> "Augmenter":
@@ -59,7 +59,7 @@ class Augmenter:
         self.__transforms.append(A.Blur(blur_limit=blur_limit, p=p))
         return self
 
-    def gauss_noise(self, std_range=(0.0088,0.0152), p=0.25) -> "Augmenter":
+    def gauss_noise(self, std_range=(0.0088, 0.0152), p=0.25) -> "Augmenter":
         self.__transforms.append(A.GaussNoise(std_range=std_range, p=p))
         return self
 

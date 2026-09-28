@@ -1,10 +1,3 @@
-import sys
-
-if sys.version_info < (3, 11):
-    from typing_extensions import Self
-else:
-    from typing import Self
-
 from pathlib import Path
 from cvkit.core.annotation.io.abc.base import BaseDocument
 
@@ -23,12 +16,12 @@ class TxtDocument(BaseDocument):
         return self.content
 
     @classmethod
-    def new(cls, path: str | Path, encoding: str = "utf-8") -> Self:
+    def new(cls, path: str | Path, encoding: str = "utf-8") -> "TxtDocument":
         doc = cls(path, encoding)
         doc.content = ""
         return doc
 
-    def read(self) -> Self:
+    def read(self) -> "TxtDocument":
         with open(self.path, "r", encoding=self.encoding) as f:
             self.content = f.read()
         return self
@@ -38,7 +31,7 @@ class TxtDocument(BaseDocument):
             self.read()
         return self.content.splitlines(keepends=keepends)
 
-    def write(self, content: str) -> Self:
+    def write(self, content: str) -> "TxtDocument":
         """
             Replace the in-memory content.
 
@@ -48,7 +41,7 @@ class TxtDocument(BaseDocument):
         self.content = content
         return self
 
-    def append(self, content: str) -> Self:
+    def append(self, content: str) -> "TxtDocument":
         if self.content is None:
             if self.path.exists():
                 self.read()
@@ -57,7 +50,7 @@ class TxtDocument(BaseDocument):
         self.content += content
         return self
 
-    def save(self, save_path: str | Path | None = None) -> Self:
+    def save(self, save_path: str | Path | None = None) -> "TxtDocument":
         if self.content is None:
             raise ValueError("content is None")
 
@@ -70,5 +63,3 @@ class TxtDocument(BaseDocument):
 
 if __name__ == "__main__":
     txt_path = r"/mnt/FourT/classes.txt"
-    # txt = TxtDocument(txt_path).read()
-    # print(txt)

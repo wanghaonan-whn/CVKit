@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing_extensions import Self
@@ -64,7 +62,7 @@ class XmlDocument(BaseDocument):
         node = self.find(xpath)
         return node.attrib.get(attr_name, default) if node is not None else default
 
-    def update_text(self, xpath: str, new_value: str) -> XmlDocument:
+    def update_text(self, xpath: str, new_value: str) -> "XmlDocument":
         """更新节点文本"""
         node = self.find(xpath)
         if node is not None:
@@ -73,7 +71,7 @@ class XmlDocument(BaseDocument):
             raise KeyError("Not found node {}".format(xpath))
         return self
 
-    def update_attr(self, xpath: str, attr_name: str, value: str) -> XmlDocument:
+    def update_attr(self, xpath: str, attr_name: str, value: str) -> "XmlDocument":
         """更新节点属性"""
         node = self.find(xpath)
         if node is not None:
@@ -82,7 +80,7 @@ class XmlDocument(BaseDocument):
             raise KeyError("Not found node {}".format(xpath))
         return self
 
-    def append_node(self, xpath: str, tag: str, text: str | None = None, attrib: dict[str, str] | None = None) -> XmlDocument:
+    def append_node(self, xpath: str, tag: str, text: str | None = None, attrib: dict[str, str] | None = None) -> "XmlDocument":
         """在指定节点下追加子节点"""
         parent = self.find(xpath)
         if parent is None:
@@ -92,7 +90,7 @@ class XmlDocument(BaseDocument):
         parent.append(node)
         return self
 
-    def remove_node(self, xpath: str) -> XmlDocument:
+    def remove_node(self, xpath: str) -> "XmlDocument":
         """删除匹配节点"""
         target = self.find(xpath)
         if target is None:

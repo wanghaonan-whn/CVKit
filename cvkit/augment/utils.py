@@ -1,7 +1,6 @@
 import cv2
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-
 from cvkit.augment.aug import Augmenter
 from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
 from cvkit.core.annotation.io.txt import TxtDocument
