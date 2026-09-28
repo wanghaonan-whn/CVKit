@@ -14,7 +14,7 @@ class DatasetChecker:
         self._check_labels(result)
         return result
 
-    def _check_images(self, result) -> None:
+    def _check_images(self, result: DatasetCheckResult) -> None:
         for image_file in self.dataset.image_dir.iterdir():
             if image_file.suffix.lower() not in self.dataset.IMAGE_EXTS:
                 continue
@@ -33,7 +33,7 @@ class DatasetChecker:
             if is_empty:
                 result.empty_labels.append(label_file)
 
-    def _check_labels(self, result) -> None:
+    def _check_labels(self, result: DatasetCheckResult) -> None:
         for label_file in self.dataset.label_dir.glob("*.txt"):
             image_file = self.dataset.find_image(label_file.stem)
             if image_file is None:
