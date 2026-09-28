@@ -3,6 +3,7 @@ import shutil
 import cv2
 from pathlib import Path
 from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class Datasets:
@@ -47,7 +48,7 @@ class Datasets:
                 print(f"Missing image: {label_file}")
         return self
 
-    def split(self) -> "Datasets":
+    def split(self, max_workers: int = 4) -> "Datasets":
         label_dir = Path(self.data_dir) / "labels"
         save_dir = Path(self.data_dir) / "split"
         if save_dir.exists():
@@ -76,23 +77,31 @@ class Datasets:
         train_labels = labels[:num_train]
         val_labels = labels[num_train:]
 
-        self.__copy_dataset(train_labels, image_mapping, img_train_dir, label_train_dir)
-        self.__copy_dataset(val_labels, image_mapping, img_val_dir, label_val_dir)
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            train_future = executor.submit(self.__copy_dataset, train_labels, image_mapping, img_train_dir, label_train_dir, max_workers)
+            val_future = executor.submit(self.__copy_dataset, val_labels, image_mapping, img_val_dir, label_val_dir, max_workers)
+            train_future.result()
+            val_future.result()
         return self
 
     @staticmethod
-    def __copy_dataset(
-            labels: list[Path],
-            image_mapping: dict[str, Path],
-            img_save_dir: Path,
-            label_save_dir: Path
-    ) -> None:
-        for label_file in labels:
-            image_file = image_mapping.get(label_file.stem)
-            if image_file is None:
-                raise FileNotFoundError(f"Image not found: {label_file.stem}")
-            shutil.copy2(label_file, label_save_dir / label_file.name)
-            shutil.copy2(image_file, img_save_dir / image_file.name)
+    def __copy_one(label_file: Path, image_mapping: dict[str, Path], img_save_dir: Path, label_save_dir: Path) -> None:
+        image_file = image_mapping.get(label_file.stem)
+        if image_file is None:
+            raise FileNotFoundError(f"Image not found: {label_file.stem}")
+
+        shutil.copy2(label_file, label_save_dir / label_file.name)
+        shutil.copy2(image_file, img_save_dir / image_file.name)
+
+    @staticmethod
+    def __copy_dataset(labels: list[Path], image_mapping: dict[str, Path], img_save_dir: Path, label_save_dir: Path, max_workers: int = 4) -> None:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [
+                executor.submit(Datasets.__copy_one, label_file, image_mapping, img_save_dir, label_save_dir)
+                for label_file in labels
+            ]
+            for future in as_completed(futures):
+                future.result()
 
     def __find_image(self, stem: str) -> Path | None:
         return next(
@@ -100,10 +109,9 @@ class Datasets:
                 image_file
                 for image_file in self.image_dir.glob(f"{stem}.*")
                 if image_file.suffix.lower() in self.IMAGE_EXTS
-            ),
-            None,
+            ), None
         )
 
 
 if __name__ == "__main__":
-    Datasets("/mnt/FourT/TV/项点/定位/纵向牵引拉杆/datasets2", ratio=0.5).split()
+    Datasets("/mnt/FourT/TV/项点/定位/转向架/puke/datasets9/转向架1-标注完成", ratio=0.9).split()
