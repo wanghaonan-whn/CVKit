@@ -1,14 +1,17 @@
 from cvkit.core.annotation.annotation import YOLOAnnotationUtils
+from cvkit.core.annotation.hbb.yolo import YOLODetectionUtils
 
 
 class YOLOSegmentationUtils(YOLOAnnotationUtils):
-    def polygon_2_bbox(self):
-        annotations = self.parse()
-        if not annotations:
-            raise ValueError(f"No polygon annotation in {self.path.name}")
+    def to_detection(self):
+        if not self.labels:
+            raise ValueError(f"No polygon annotation in labels")
 
         bbox = []
-        for class_id, *points in annotations:
+        for class_id, *coordinates in self.labels:
+            if len(coordinates) < 6 or len(coordinates) % 2 != 0:
+                raise ValueError("Invalid YOLO segmentation annotation")
+            points = list(zip(coordinates[0::2], coordinates[1::2]))
             x_coordinates = [x for x, _ in points]
             y_coordinates = [y for _, y in points]
 
@@ -26,6 +29,4 @@ class YOLOSegmentationUtils(YOLOAnnotationUtils):
             x_center = (x_min + x_max) / 2
             y_center = (y_min + y_max) / 2
             bbox.append(f"{class_id} {x_center:.6f} {y_center:.6f} {box_width:.6f} {box_height:.6f}")
-        self.content = "\n".join(bbox) + "\n"
-        self.write(self.content)
-        return self
+        return YOLODetectionUtils(bbox)
