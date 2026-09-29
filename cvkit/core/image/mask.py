@@ -6,9 +6,10 @@ from PIL import Image
 from typing_extensions import Self
 from cvkit.core.annotation.io.txt import TxtDocument
 from cvkit.core.annotation.seg.yolo import YOLOSegmentationUtils
+from cvkit.core.annotation.utils import AnnotationUtils
 from cvkit.core.image.io import ImageIO
 from simple_lama_inpainting import SimpleLama
-from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
+from cvkit.core.annotation.hbb.yolo import YOLODetectionUtils
 
 
 class MaskImageUtils(ImageIO):
@@ -118,7 +119,7 @@ class MaskImageUtils(ImageIO):
 
     def generate_from_hbb(self):
         mask = np.zeros((self.height, self.width), dtype=np.uint8)
-        labels = YOLOAnnotationUtils(self.label_path).parse_label()
+        labels = YOLODetectionUtils(self.label_path).parse()
         if len(labels) == 0:
             raise ValueError("label cat not be empty")
 
@@ -175,13 +176,13 @@ class MaskImageUtils(ImageIO):
         return self
 
     def crop_mask_from_hbb(self, save_dir: str | Path, image_index: int = 0) -> Self:
-        annotations = YOLOAnnotationUtils(self.label_path).parse_label()
+        annotations = YOLODetectionUtils(self.label_path).parse()
 
         save_dir = Path(save_dir)
         save_dir.mkdir(parents=True, exist_ok=True)
         for index, (class_id, *xywh) in enumerate(annotations):
             if class_id != self.cls: continue
-            xmin, ymin, xmax, ymax = YOLOAnnotationUtils.yolo_to_voc((self.width, self.height), *xywh)
+            xmin, ymin, xmax, ymax = AnnotationUtils.yolo_to_voc((self.width, self.height), *xywh)
             xmin = int(round(xmin))
             ymin = int(round(ymin))
             xmax = int(round(xmax))
@@ -242,19 +243,19 @@ class MaskImageUtils(ImageIO):
 
 
 if __name__ == "__main__":
-    # pass
     from tqdm import tqdm
 
-    image_dir = ""
+    image_dir = "/mnt/4t/11/test/images"
     for image_path in tqdm(Path(image_dir).iterdir()):
         root = image_path.parents[1]
+        label_path = root / "labels" / f"{image_path.stem}.txt"
         result_path = root / "cachu" / "images" / f"{image_path.stem}.png"
         (
             MaskImageUtils(image_path, erase_num=1)
             .read("cv2", "L")
-            .generate_from_seg()
-            .save_mask_seg_as_yolo()
-            .expand_mask(1)
+            .generate_from_hbb()
+            .save_mask_bbox_as_yolo()
+            .expand_mask(5)
             .repair()
-            .save(save_path=result_path)
+            .save_result(result_path)
         )

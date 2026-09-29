@@ -1,9 +1,7 @@
 from pathlib import Path
 from typing import List, Mapping
 from collections import Counter
-
 from cvkit.core.annotation.io.txt import TxtDocument
-from cvkit.core.annotation.utils import AnnotationUtils
 
 
 class YOLOAnnotationUtils(TxtDocument):
