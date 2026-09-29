@@ -153,15 +153,7 @@ class YOLOAnnotationUtils(TxtDocument):
 
             merged_labels.append(incoming_label.copy())
 
-        self.content = "".join(
-            f"{int(class_id)} "
-            f"{float(x):.6f} "
-            f"{float(y):.6f} "
-            f"{float(width):.6f} "
-            f"{float(height):.6f}\n"
-            for class_id, x, y, width, height
-            in merged_labels
-        )
+        self.content = "".join(" ".join(map(str, label)) + "\n" for label in merged_labels)
         return self
 
     def get_classes_label(self, class_ids: int | List[str | int]) -> List[List[float | int]]:
