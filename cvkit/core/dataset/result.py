@@ -7,3 +7,4 @@ class DatasetCheckResult:
     missing_labels: list[Path] = field(default_factory=list)
     empty_labels: list[Path] = field(default_factory=list)
     orphan_labels: list[Path] = field(default_factory=list)
+    nonstandard_images: list[Path] = field(default_factory=list)

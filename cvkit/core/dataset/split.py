@@ -9,7 +9,7 @@ class DatasetSplitter:
     def __init__(self, dataset: Dataset) -> None:
         self.dataset = dataset
 
-    def split(self, ratio: float = 0.9, max_workers: int = 8) -> None:
+    def split(self, ratio: float = 0.9, seed: int | None = 42, max_workers: int = 8) -> None:
         if not 0 < ratio < 1:
             raise ValueError("ratio must be between 0 and 1")
 
@@ -30,7 +30,8 @@ class DatasetSplitter:
         if not labels:
             raise FileNotFoundError(f"No label files found in {self.dataset.label_dir}")
 
-        random.shuffle(labels)
+        rng = random.Random(seed)
+        rng.shuffle(labels)
         num_train = int(len(labels) * ratio)
 
         train_labels = labels[:num_train]

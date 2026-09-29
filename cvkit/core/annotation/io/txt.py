@@ -16,7 +16,7 @@ class TxtDocument(BaseDocument):
         return self.content
 
     @classmethod
-    def new(cls, path: str | Path, encoding: str = "utf-8") -> "TxtDocument":
+    def new(cls, path: str | Path, encoding: str = "utf-8"):
         doc = cls(path, encoding)
         doc.content = ""
         return doc
