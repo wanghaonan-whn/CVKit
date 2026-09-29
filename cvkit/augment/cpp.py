@@ -5,8 +5,9 @@ from pathlib import Path
 from typing import List
 from PIL import Image
 from cvkit.augment.aug import Augmenter
-from cvkit.core.annotation.hbb.yolo import YOLOAnnotationUtils
+from cvkit.core.annotation.hbb.yolo import YOLODetectionUtils
 from cvkit.core.annotation.io.txt import TxtDocument
+from cvkit.core.annotation.utils import AnnotationUtils
 
 
 class CopyPaste:
@@ -25,7 +26,7 @@ class CopyPaste:
         self.save_path = self.image_path.parents[1] / "cp4qq1"
 
     def paste_with_bbox(self, n: int, pases: List, scale: tuple[float, float] = (1.0, 1.1)) -> None:
-        labels = YOLOAnnotationUtils(self.label_path).get_classes_box(self.class_id)
+        labels = YOLODetectionUtils(self.label_path).get_classes_label(self.class_id)
 
         save_image_path = self.save_path / "images"
         save_label_path = self.save_path / "labels"
@@ -50,7 +51,7 @@ class CopyPaste:
             file_stem = f"guoche-{image_index}-{self.image_path.stem}-{self.class_id}-nump{current_paste_count}"
             txt = TxtDocument.new(save_label_path / f'{file_stem}.txt')
             for label_choice in selected_labels:
-                x, y, w, h = YOLOAnnotationUtils.yolo_to_xywh((width, height), *label_choice[1:])
+                x, y, w, h = AnnotationUtils.yolo_to_xywh((width, height), *label_choice[1:])
                 if x < 10 or y < 10 or x > width - 10 or y > height - 10:
                     continue
 
@@ -114,12 +115,3 @@ class CopyPaste:
 
         img_xpn = Image.fromarray(augmented_image_np)
         return img_xpn
-
-
-if __name__ == "__main__":
-    pattern_path = Path("/mnt/FourT/pattern专用TV/裂缝")
-    pases = [p for p in pattern_path.rglob("*.png")]
-    (
-        CopyPaste("/mnt/4t/test/images/209p_20250826005320_1_1--zxglsds_0.png")
-        .paste_with_bbox(10, pases)
-    )
