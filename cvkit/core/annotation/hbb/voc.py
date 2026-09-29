@@ -96,7 +96,7 @@ class VOCAnnotationUtils(XmlDocument):
         else:
             return False
 
-    def rename_voc_label(self, new_label: str, old_label: str) -> VOCAnnotationUtils:
+    def rename_voc_label(self, new_label: str, old_label: str) -> "VOCAnnotationUtils":
         """重命名标签"""
         for node in self.findall("object/name"):
             if node.text == old_label:
@@ -107,7 +107,7 @@ class VOCAnnotationUtils(XmlDocument):
             self,
             classes_mapping: Mapping[str, int],
             save_path: str | Path | None = None,
-    ) -> VOCAnnotationUtils:
+    ) -> "VOCAnnotationUtils":
         if save_path is None:
             save_path = self.path.parents[1].joinpath("labels")
         else:
@@ -131,7 +131,7 @@ class VOCAnnotationUtils(XmlDocument):
             self,
             save_path: str | Path | None = None,
             image_suffix: str = "jpg",
-    ) -> VOCAnnotationUtils:
+    ) -> "VOCAnnotationUtils":
         if save_path is None:
             save_path = self.path.parents[1].joinpath("json")
         else:
