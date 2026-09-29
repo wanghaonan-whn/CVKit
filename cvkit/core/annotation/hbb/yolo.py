@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List
 from collections.abc import Mapping
 from cvkit.core.annotation.annotation import YOLOAnnotationUtils
 from cvkit.core.annotation.hbb.voc import VOCAnnotationUtils
