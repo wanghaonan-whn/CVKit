@@ -92,68 +92,14 @@ class YOLOAnnotationUtils(TxtDocument):
         self.content = "".join(unique)
         return self
 
-    def merge(
-            self,
-            other: "str | Path | YOLOAnnotationUtils",
-            class_priority: Mapping[int | str, int],
-            prefer_other: bool = False
-    ):
-        """
-              合并另一个 YOLO 标签文件。
-
-              Args:
-                  other:
-                      另一个标签文件或 YOLOAnnotationUtils 对象。
-                  class_priority:
-                      类别优先级，数值越大越优先。
-                      例如 {0: 1, 1: 10} 表示冲突时保留类别 1。
-                  prefer_other:
-                      优先级相同时，是否保留 other 中的框。
-        """
-        priorities = {
-            int(class_id): int(priority)
-            for class_id, priority in class_priority.items()
-        }
-
+    def merge(self, other: "str | Path | YOLOAnnotationUtils") -> "YOLOAnnotationUtils":
         if isinstance(other, YOLOAnnotationUtils):
             other_document = other
         else:
             other_document = YOLOAnnotationUtils(other)
 
-        merged_labels = [label.copy() for label in self.parse()]
-
-        for incoming_label in other_document.parse():
-            conflict_indices = [
-                index
-                for index, existing_label in enumerate(merged_labels)
-                if AnnotationUtils.is_bbox_iou(existing_label, incoming_label)
-            ]
-
-            if not conflict_indices:
-                merged_labels.append(incoming_label.copy())
-                continue
-
-            incoming_priority = priorities.get(int(incoming_label[0]), 0)
-
-            highest_existing_priority = max(
-                priorities.get(int(merged_labels[index][0]), 0)
-                for index in conflict_indices
-            )
-
-            should_keep_incoming = (
-                    incoming_priority > highest_existing_priority or
-                    (prefer_other and incoming_priority == highest_existing_priority)
-            )
-
-            if not should_keep_incoming:
-                continue
-
-            for index in reversed(conflict_indices):
-                merged_labels.pop(index)
-
-            merged_labels.append(incoming_label.copy())
-
-        self.content = "".join(" ".join(map(str, label)) + "\n" for label in merged_labels)
+        labels = self.parse() + other_document.parse()
+        self.content = "".join(" ".join(map(str, label)) + "\n" for label in labels)
         return self
 
     def get_classes_label(self, class_ids: int | List[str | int]) -> List[List[float | int]]:
