@@ -8,7 +8,7 @@ class YOLOAnnotationUtils:
     """ YOLO 通用工具类 """
 
     def __init__(self, labels: list[list[int | float]]):
-        self.labels = [[int(label[0]), *map(float, label[:1])] for label in labels]
+        self.labels = [[int(label[0]), *map(float, label[1:])] for label in labels]
 
     @classmethod
     def from_labels(cls, labels: list[list[int | float]]) -> "YOLOAnnotationUtils":
