@@ -1,106 +1,85 @@
 from pathlib import Path
-from typing import List, Mapping
+from typing import Mapping
 from collections import Counter
 from cvkit.core.annotation.io.txt import TxtDocument
 
 
-class YOLOAnnotationUtils(TxtDocument):
+class YOLOAnnotationUtils:
     """ YOLO 通用工具类 """
 
-    @property
-    def length(self):
-        return len(self.readlines())
+    def __init__(self, labels: list[list[int | float]]):
+        self.labels = [[int(label[0]), *map(float, label[:1])] for label in labels]
 
-    def parse(self) -> List[List[float | int]]:
-        """ 解析 """
+    @classmethod
+    def from_labels(cls, labels: list[list[int | float]]) -> "YOLOAnnotationUtils":
+        return cls(labels)
+
+    @classmethod
+    def from_file(cls, path: Path | str) -> "YOLOAnnotationUtils":
+        lines = TxtDocument(path).readlines()
         labels = []
-        for line in self.readlines():
+        for line in lines:
             parts = line.strip().split()
             if not parts:
                 continue
-            cls, *coordinates = parts
-            labels.append([int(cls), *map(float, coordinates)])
-        return labels
+            class_, *coordinates = parts
+            labels.append([int(class_), *map(float, coordinates)])
+        return cls(labels)
 
-    def is_label_in_yolo(self, class_ids: List[str | int]) -> bool:
+    @property
+    def length(self) -> int:
+        return len(self.labels)
+
+    def parse(self) -> list[list[float | int]]:
+        """ 解析 """
+        return [label.copy() for label in self.labels]
+
+    def is_label_in_yolo(self, class_ids: list[str | int]) -> bool:
         """标签查找对应的yolo标签"""
         class_ids = set(map(int, class_ids))
-        return all(int(label.split(' ')[0]) in class_ids for label in self.readlines())
+        return any(label[0] in class_ids for label in self.labels)
+
+    def is_empty(self) -> bool:
+        return self.length == 0
 
     def count(self) -> Counter[int]:
         """ 计数 """
-        return Counter(int(line.split()[0]) for line in self.readlines() if line.strip())
+        return Counter(label[0] for label in self.labels)
 
     def remap(self, mapping: Mapping[int | str, int | str]) -> "YOLOAnnotationUtils":
-        """
-            Args:
-                mapping: 类别映射，例如 {0: 1, 1: 0}。
-            Returns:
-                链式调用
-            Examples:
-                >>> YOLOAnnotationUtils("").remap({0: 1})
-                >>> YOLOAnnotationUtils("").remap({0: 1, 1: 0})
-         """
+        """ 类别映射，例如 {0: 1, 1: 0} """
         class_mapping = {int(k): int(v) for k, v in mapping.items()}
-
-        new_lines = []
-        for label in self.parse():
-            class_id = int(label[0])
-            label[0] = class_mapping.get(class_id, class_id)
-            new_lines.append(" ".join(map(str, label)) + "\n")
-
-        self.content = "".join(new_lines)
+        for label in self.labels:
+            label[0] = class_mapping.get(int(label[0]), int(label[0]))
         return self
 
-    def retain(self, retain: List[str | int]) -> "YOLOAnnotationUtils":
+    def retain(self, class_ids: list[str | int]) -> "YOLOAnnotationUtils":
         """ 保留 """
-        retain = list(map(int, retain))
-
-        new_lines = []
-        for label in self.parse():
-            if label[0] not in retain:
-                continue
-            new_lines.append(" ".join(map(str, label)) + "\n")
-
-        self.content = "".join(new_lines)
+        class_ids = list(map(int, class_ids))
+        self.labels = [label for label in self.labels if label[0] in class_ids]
         return self
 
-    def del_cls(self, delete: List[str | int]) -> "YOLOAnnotationUtils":
+    def delete_by_cls(self, class_ids: list[str | int]) -> "YOLOAnnotationUtils":
         """ 删除 """
-        delete = list(map(int, delete))
-
-        new_lines = []
-        for label in self.parse():
-            if label[0] in delete:
-                continue
-            new_lines.append(" ".join(map(str, label)) + "\n")
-
-        self.content = "".join(new_lines)
-        return self
-
-    def remove_empty(self) -> "YOLOAnnotationUtils":
-        """ 删空 """
-        if len(self.readlines()) == 0:
-            self.path.unlink()
+        class_ids = list(map(int, class_ids))
+        self.labels = [label for label in self.labels if label[0] not in class_ids]
         return self
 
     def remove_duplicate(self) -> "YOLOAnnotationUtils":
         """ 删重 """
-        unique = list(dict.fromkeys(self.readlines()))
-        self.content = "".join(unique)
+        self.labels = [list(label) for label in dict.fromkeys(tuple(label) for label in self.labels)]
         return self
 
-    def merge(self, other: "str | Path | YOLOAnnotationUtils") -> "YOLOAnnotationUtils":
-        if isinstance(other, YOLOAnnotationUtils):
-            other_document = other
-        else:
-            other_document = YOLOAnnotationUtils(other)
-
-        labels = self.parse() + other_document.parse()
-        self.content = "".join(" ".join(map(str, label)) + "\n" for label in labels)
+    def merge(self, other: "YOLOAnnotationUtils") -> "YOLOAnnotationUtils":
+        self.labels.extend(label.copy() for label in other.labels)
         return self
 
-    def get_classes_label(self, class_ids: int | List[str | int]) -> List[List[float | int]]:
+    def get_classes_label(self, class_ids: int | list[str | int]) -> list[list[float | int]]:
         """ 获取指定cls """
         target_class_ids = {class_ids} if isinstance(class_ids, int) else set(list(map(int, class_ids)))
-        return [line for line in self.parse() if line[0] in target_class_ids]
+        return [label.copy() for label in self.labels if label[0] in target_class_ids]
+
+    def save(self, path: str | Path) -> "YOLOAnnotationUtils":
+        target = Path(path)
+        TxtDocument.new(target).write("".join([" ".join(map(str, label)) + "\n" for label in self.labels])).save()
+        return self
