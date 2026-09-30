@@ -1,7 +1,7 @@
 import cv2
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from cvkit.core.annotation.annotation import YOLOAnnotationUtils
+from cvkit.core.annotation.hbb.yolo import YOLODetectionUtils
 from cvkit.core.annotation.io.txt import TxtDocument
 
 
@@ -48,7 +48,7 @@ class YOLODatasetAugmenter:
             print(f"warning: {label_path} does not exist")
             return
 
-        parsed_labels = YOLOAnnotationUtils.from_file(label_path).parse()
+        parsed_labels = YOLODetectionUtils.from_file(label_path).parse()
 
         classes = [label[0] for label in parsed_labels]
         bboxes = [label[1:] for label in parsed_labels]

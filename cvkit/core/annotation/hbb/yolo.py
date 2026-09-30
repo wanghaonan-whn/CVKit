@@ -10,6 +10,16 @@ class YOLODetectionUtils(YOLOAnnotationUtils):
         YOLO 检测工具类 V1.1
     """
 
+    def validate(self):
+        for label in self.labels:
+            class_id, x, y, width, height = label
+            if len(label) != 5:
+                raise ValueError(f"Label {label} is invalid")
+            if width <= 0 or height <= 0:
+                raise ValueError(f"Detection label has invalid size: {label}")
+            if not all(0.0 <= value <= 1.0 for value in (x, y, width, height)):
+                raise ValueError(f"Detection label contains coordinates outside [0, 1]: {label}")
+
     def save_as_voc(
             self,
             img_name: str,

@@ -1,14 +1,16 @@
+from abc import abstractmethod, ABC
 from pathlib import Path
 from typing import Mapping
 from collections import Counter
 from cvkit.core.annotation.io.txt import TxtDocument
 
 
-class YOLOAnnotationUtils:
+class YOLOAnnotationUtils(ABC):
     """ YOLO 通用工具类 """
 
     def __init__(self, labels: list[list[int | float]]):
         self.labels = [[int(label[0]), *map(float, label[1:])] for label in labels]
+        self.validate()
 
     @classmethod
     def from_labels(cls, labels: list[list[int | float]]) -> "YOLOAnnotationUtils":
@@ -33,6 +35,10 @@ class YOLOAnnotationUtils:
     def parse(self) -> list[list[float | int]]:
         """ 解析 """
         return [label.copy() for label in self.labels]
+
+    @abstractmethod
+    def validate(self):
+        raise NotImplementedError
 
     def is_label_in_yolo(self, class_ids: list[str | int]) -> bool:
         """标签查找对应的yolo标签"""
