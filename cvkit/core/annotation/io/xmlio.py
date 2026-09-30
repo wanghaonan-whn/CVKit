@@ -110,19 +110,3 @@ class XmlDocument(BaseDocument):
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.__tree.write(self.path, encoding="utf-8", xml_declaration=True)
         return self
-
-
-if __name__ == "__main__":
-    # xml_path = r"D:\datasets\VOCtrainval_11-May-2012\VOCdevkit\VOC2012\Annotations\2007_000027.xml"
-    # xmldoc = XMLDocument(xml_path)
-    # print(xmldoc.root.text)
-    # print(xmldoc.read())
-    # print(xmldoc.find("size/width").text)
-    # print(xmldoc.gettext("size/height"))
-    # print(xmldoc.getattr("size", "width"))
-    # print(xmldoc.update_text("a", "1"))
-    # print(xmldoc.append_node("a", "1"))
-    # xmldoc.update_text("size/width", "486").save()
-    xml_path = "/mnt/FourT/TV/内部测试/HSBK_成昆线成都上行_CR200J1B_20250223_141847_8/HSBK_成昆线成都上行_CR200J1B_20250223_141847_8/xml/1_1.xml"
-    xml = XmlDocument(xml_path).read()
-    print(xml)
