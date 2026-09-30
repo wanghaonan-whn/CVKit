@@ -26,7 +26,7 @@ class CopyPaste:
         self.save_path = self.image_path.parents[1] / "cp4qq1"
 
     def paste_with_bbox(self, n: int, pases: List, scale: tuple[float, float] = (1.0, 1.1)) -> None:
-        labels = YOLODetectionUtils(self.label_path).get_classes_label(self.class_id)
+        labels = YOLODetectionUtils.from_file(self.label_path).get_classes_label(self.class_id)
 
         save_image_path = self.save_path / "images"
         save_label_path = self.save_path / "labels"
