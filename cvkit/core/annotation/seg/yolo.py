@@ -28,5 +28,5 @@ class YOLOSegmentationUtils(YOLOAnnotationUtils):
 
             x_center = (x_min + x_max) / 2
             y_center = (y_min + y_max) / 2
-            bbox.append(f"{class_id} {x_center:.6f} {y_center:.6f} {box_width:.6f} {box_height:.6f}")
+            bbox.append([int(class_id), x_center, y_center, box_width, box_height])
         return YOLODetectionUtils(bbox)

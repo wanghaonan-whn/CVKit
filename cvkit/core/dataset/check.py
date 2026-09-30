@@ -30,8 +30,7 @@ class DatasetChecker:
                 result.missing_labels.append(image_file)
                 continue
 
-            is_empty = not any(line.strip() for line in YOLODetectionUtils(label_file).readlines())
-            if is_empty:
+            if YOLODetectionUtils.from_file(label_file).is_empty():
                 result.empty_labels.append(label_file)
 
     def _check_labels(self, result: DatasetCheckResult) -> None:
