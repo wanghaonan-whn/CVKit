@@ -96,16 +96,14 @@ class MaskImageUtils(ImageIO):
 
     def generate_from_seg(self):
         mask = np.zeros((self.height, self.width), dtype=np.uint8)
-        lines = TxtDocument(self.label_path).readlines()
-        annotations = YOLOSegmentationUtils.parse_label(lines)
-        if len(lines) == 0:
-            raise ValueError("label_path must contain at least one line")
+        annotations = YOLOSegmentationUtils.from_file(self.label_path).parse()
 
         polygons = []
-        for class_id, points in annotations:
+        for class_id, *coordinates in annotations:
             if class_id != self.cls:
                 continue
-            polygons.append(self.points_to_pixels(points))
+            normalized_points = list(zip(coordinates[0::2], coordinates[1::2]))
+            polygons.append(self.points_to_pixels(normalized_points))
 
         if self.erase_num > len(polygons):
             raise ValueError(f"erase_num={self.erase_num} 超过标注数量 {len(polygons)}")
@@ -119,7 +117,7 @@ class MaskImageUtils(ImageIO):
 
     def generate_from_hbb(self):
         mask = np.zeros((self.height, self.width), dtype=np.uint8)
-        labels = YOLODetectionUtils(self.label_path).parse()
+        labels = YOLODetectionUtils.from_file(self.label_path).parse()
         if len(labels) == 0:
             raise ValueError("label cat not be empty")
 
@@ -153,14 +151,14 @@ class MaskImageUtils(ImageIO):
         return self
 
     def crop_mask_from_seg(self, save_dir: str | Path, image_index: int = 0) -> Self:
-        lines = TxtDocument(self.label_path).readlines()
-        annotations = YOLOSegmentationUtils.parse_label(lines)
+        annotations = YOLOSegmentationUtils.from_file(self.label_path).parse()
 
         save_dir = Path(save_dir)
         save_dir.mkdir(parents=True, exist_ok=True)
-        for index, (class_id, normalized_points) in enumerate(annotations):
+        for index, (class_id, *coordinates) in enumerate(annotations):
             if class_id != self.cls: continue
 
+            normalized_points = list(zip(coordinates[0::2], coordinates[1::2]))
             points = self.points_to_pixels(normalized_points)
 
             alpha = np.zeros((self.height, self.width), dtype=np.uint8)
@@ -176,7 +174,7 @@ class MaskImageUtils(ImageIO):
         return self
 
     def crop_mask_from_hbb(self, save_dir: str | Path, image_index: int = 0) -> Self:
-        annotations = YOLODetectionUtils(self.label_path).parse()
+        annotations = YOLODetectionUtils.from_file(self.label_path).parse()
 
         save_dir = Path(save_dir)
         save_dir.mkdir(parents=True, exist_ok=True)

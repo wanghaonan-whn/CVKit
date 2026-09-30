@@ -16,12 +16,12 @@ class DatasetStatistics:
     def count_classes(self) -> Counter[int]:
         counter = Counter()
         for label in self.dataset.label_dir.glob("*.txt"):
-            counter += YOLODetectionUtils(label).count()
+            counter += YOLODetectionUtils.from_file(label).count()
         return counter
 
     def images_per_class(self) -> Counter[int]:
         counter = Counter()
         for label in self.dataset.label_dir.glob("*.txt"):
-            for key in YOLODetectionUtils(label).count().keys():
+            for key in YOLODetectionUtils.from_file(label).count().keys():
                 counter[key] += 1
         return counter
