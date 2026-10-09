@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from typing import Literal
+from typing import Literal, TYPE_CHECKING
 from pathlib import Path
 from PIL import Image
 from typing_extensions import Self
@@ -8,15 +8,17 @@ from cvkit.core.annotation.io.txt import TxtDocument
 from cvkit.core.annotation.seg.yolo import YOLOSegmentationUtils
 from cvkit.core.annotation.utils import AnnotationUtils
 from cvkit.core.image.io import ImageIO
-from simple_lama_inpainting import SimpleLama
 from cvkit.core.annotation.hbb.yolo import YOLODetectionUtils
+
+if TYPE_CHECKING:
+    from simple_lama_inpainting import SimpleLama
 
 
 class MaskImageUtils(ImageIO):
     """
         Process: generate -> save/expand -> repair -> save_result
     """
-    __lama: SimpleLama | None = None
+    __lama: "SimpleLama | None" = None
 
     def __init__(
             self,
@@ -88,6 +90,12 @@ class MaskImageUtils(ImageIO):
 
     def repair(self):
         if MaskImageUtils.__lama is None:
+            try:
+                from simple_lama_inpainting import SimpleLama
+            except ImportError as error:
+                raise ImportError(
+                    'Image repair requires: pip install "cvkit[inpainting]"'
+                ) from error
             MaskImageUtils.__lama = SimpleLama()
         source = Image.fromarray(self.original_image)
         mask = Image.fromarray(self.mask).convert("L")
