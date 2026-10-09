@@ -4,7 +4,7 @@ import numpy as np
 from pathlib import Path
 from typing import List
 from PIL import Image
-from cvkit.augment.aug import Augmenter
+from cvkit.core.augment.aug import Augmenter
 from cvkit.core.annotation.hbb.yolo import YOLODetectionUtils
 from cvkit.core.annotation.io.txt import TxtDocument
 from cvkit.core.annotation.utils import AnnotationUtils
