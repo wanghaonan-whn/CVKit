@@ -8,8 +8,8 @@ class VOCSegmentUtils(XmlDocument):
     @classmethod
     def build_annotation(
             cls, img_name: str, img_size: tuple[int, int], bboxes: List[List[int]],
-            save_path: str | Path, points, class_name: str = "object", depth: int = 1,
-    ):
+            save_path: str | Path, class_name: str = "object", depth: int = 1,
+    ) -> "VOCSegmentUtils":
         width, height = img_size
         document = cls.new(save_path, root_tag="annotation")
         (
@@ -23,11 +23,10 @@ class VOCSegmentUtils(XmlDocument):
             .append_node("size", "width", text=str(width))
             .append_node("size", "height", text=str(height))
             .append_node("size", "depth", text=str(depth))
-            .append_node(".", "segmented", text="0")
+            .append_node(".", "segmented", text="1")
         )
 
         for index, bbox in enumerate(bboxes, start=1):
-            # TODO
             xmin, ymin, xmax, ymax = bbox
             document.append_node(".", "object")
             object_path = f"object[{index}]"
