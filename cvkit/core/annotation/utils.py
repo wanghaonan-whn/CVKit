@@ -26,20 +26,33 @@ class AnnotationUtils:
         return xmin, ymin, xmax, ymax
 
     @staticmethod
-    def is_bbox_iou(first: List[int | float], second: List[int | float]) -> bool:
-        _, x1, y1, w1, h1 = first
-        _, x2, y2, w2, h2 = second
+    def calculate_iou(first: list[int | float], second: list[int | float]) -> float:
+        _, x1, y1, width1, height1 = first
+        _, x2, y2, width2, height2 = second
 
-        first_xmin = x1 - w1 / 2
-        first_ymin = y1 - h1 / 2
-        first_xmax = x1 + w1 / 2
-        first_ymax = y1 + h1 / 2
+        first_xmin = x1 - width1 / 2
+        first_ymin = y1 - height1 / 2
+        first_xmax = x1 + width1 / 2
+        first_ymax = y1 + height1 / 2
 
-        second_xmin = x2 - w2 / 2
-        second_ymin = y2 - h2 / 2
-        second_xmax = x2 + w2 / 2
-        second_ymax = y2 + h2 / 2
+        second_xmin = x2 - width2 / 2
+        second_ymin = y2 - height2 / 2
+        second_xmax = x2 + width2 / 2
+        second_ymax = y2 + height2 / 2
 
-        intersection_width = min(first_xmax, second_xmax) - max(first_xmin, second_xmin)
-        intersection_height = min(first_ymax, second_ymax) - max(first_ymin, second_ymin)
-        return intersection_width > 0 and intersection_height > 0
+        intersection_width = max(0.0, min(first_xmax, second_xmax) - max(first_xmin, second_xmin))
+        intersection_height = max(0.0, min(first_ymax, second_ymax) - max(first_ymin, second_ymin))
+
+        intersection_area = intersection_width * intersection_height
+        first_area = width1 * height1
+        second_area = width2 * height2
+        union_area = first_area + second_area - intersection_area
+
+        if union_area <= 0:
+            return 0.0
+        return intersection_area / union_area
+
+    @staticmethod
+    def is_bbox_iou(first: list[int | float], second: list[int | float]) -> bool:
+        iou = AnnotationUtils.calculate_iou(first, second)
+        return iou > 0.0

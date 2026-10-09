@@ -7,7 +7,8 @@ class DatasetCleaner:
     def __init__(self, dataset: Dataset) -> None:
         self.dataset = dataset
 
-    def clean(self, result: DatasetCheckResult) -> None:
+    def clean(self, result: DatasetCheckResult, dry_run: bool = True) -> None:
+        #TODO
         self._move_bad_images(result)
         self._remove_empty_labels(result)
         self._remove_orphan_labels(result)

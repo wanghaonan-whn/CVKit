@@ -1,7 +1,10 @@
 import cv2
+from pathlib import Path
 from cvkit.core.annotation.hbb.yolo import YOLODetectionUtils
+from cvkit.core.annotation.utils import AnnotationUtils
 from cvkit.core.dataset.base import Dataset
 from cvkit.core.dataset.result import DatasetCheckResult
+from cvkit.core.image.utils import ImageUtils
 
 
 class DatasetChecker:
@@ -13,9 +16,12 @@ class DatasetChecker:
         self._check_images(result)
         self._check_labels(result)
         self._check_image_extensions(result)
+        self._check_repeat_label(result)
+        self._check_repeat_images(result)
         return result
 
     def _check_images(self, result: DatasetCheckResult) -> None:
+        """ 检查损坏图片 """
         for image_file in self.dataset.image_dir.iterdir():
             if image_file.suffix.lower() != self.dataset.image_ext:
                 continue
@@ -34,15 +40,39 @@ class DatasetChecker:
                 result.empty_labels.append(label_file)
 
     def _check_labels(self, result: DatasetCheckResult) -> None:
+        """ 检查孤儿标注 """
         for label_file in self.dataset.label_dir.glob("*.txt"):
             image_file = self.dataset.find_image(label_file.stem)
             if image_file is None:
                 result.orphan_labels.append(label_file)
 
     def _check_image_extensions(self, result: DatasetCheckResult) -> None:
+        """ 检查文件扩展名 """
         for image_file in self.dataset.image_dir.iterdir():
             if not image_file.is_file():
                 continue
-
             if image_file.suffix.lower() != self.dataset.image_ext:
                 result.nonstandard_images.append(image_file)
+
+    def _check_repeat_label(self, result: DatasetCheckResult) -> None:
+        for label_file in self.dataset.label_dir.glob("*.txt"):
+            labels = YOLODetectionUtils.from_file(label_file).parse()
+            for first_index, first_bbox in enumerate(labels):
+                for second_index in range(first_index + 1, len(labels)):
+                    second_bbox = labels[second_index]
+                    iou = AnnotationUtils.calculate_iou(first_bbox, second_bbox)
+                    if iou >= 0.95:
+                        result.repeat_labels.append((label_file, first_index + 1, second_index + 1, iou))
+
+    def _check_repeat_images(self, result: DatasetCheckResult) -> None:
+        seen: dict[str, Path] = {}
+        for image_file in self.dataset.image_dir.iterdir():
+            if not image_file.is_file():
+                continue
+            if image_file.suffix.lower() != self.dataset.image_ext:
+                continue
+            image_hash = ImageUtils.calculate_file_hash(image_file)
+            if image_hash in seen:
+                result.repeat_images.append((seen[image_hash], image_file))
+            else:
+                seen[image_hash] = image_file
