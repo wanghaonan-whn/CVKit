@@ -63,7 +63,3 @@ class ImageIO(BaseImage):
         else:
             raise TypeError(f"Unsupported image type: {type(target)}")
         return self
-
-
-if __name__ == "__main__":
-    pass

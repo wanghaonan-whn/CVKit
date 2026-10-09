@@ -185,20 +185,3 @@ class VOCAnnotationUtils(XmlDocument):
         bw = (xmax - xmin) / w
         bh = (ymax - ymin) / h
         return x, y, bw, bh
-
-
-if __name__ == "__main__":
-    # voc_path = r"D:\datasets\VOCtrainval_11-May-2012\VOCdevkit\VOC2012\Annotations\2007_000027.xml"
-    # vocutils = VOCAnnotationUtils(voc_path)
-    # name = vocutils.get_voc_label_names()
-    # vocutils.save_as_yolo().save_as_json()
-    # print(vocutils.parse_voc())
-    # print(vocutils.get_voc_label_names())
-    # vocutils.rename_voc_label("person1", "person")
-    # print(vocutils.get_voc_label_names())
-    # print(vocutils.is_label_in_voc("person1"))
-    # VOCAnnotationUtils.build("1.jpg", (100, 100), (2, 3, 4, 5), "./1.xml").save()
-    path = "/mnt/4t/test/xml"
-    iter_path = Path(path).glob("*.xml")
-    for xml_path in iter_path:
-        VOCAnnotationUtils(xml_path).read().save_as_yolo({"0": 0})

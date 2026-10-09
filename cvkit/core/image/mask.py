@@ -246,22 +246,3 @@ class MaskImageUtils(ImageIO):
         coordinates[:, 1] = np.clip(coordinates[:, 1], 0, self.height - 1)
 
         return np.rint(coordinates).astype(np.int32)
-
-
-if __name__ == "__main__":
-    from tqdm import tqdm
-
-    image_dir = "/mnt/4t/11/test/images"
-    for image_path in tqdm(Path(image_dir).iterdir()):
-        root = image_path.parents[1]
-        label_path = root / "labels" / f"{image_path.stem}.txt"
-        result_path = root / "cachu" / "images" / f"{image_path.stem}.png"
-        (
-            MaskImageUtils(image_path, erase_num=1)
-            .read("cv2", "L")
-            .generate_from_hbb()
-            .save_mask_bbox_as_yolo()
-            .expand_mask(5)
-            .repair()
-            .save_result(result_path)
-        )

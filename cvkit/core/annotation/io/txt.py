@@ -59,7 +59,3 @@ class TxtDocument(BaseDocument):
         with open(path, "w", encoding=self.encoding) as f:
             f.write(self.content)
         return self
-
-
-if __name__ == "__main__":
-    txt_path = r"/mnt/FourT/classes.txt"
