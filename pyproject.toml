@@ -35,6 +35,13 @@ dependencies = [
     "numpy>=1.24.4",
     "opencv-python-headless>=4.9.0.80",
     "albumentations>=2.0,<3",
+    "Pillow>=9.5.0",
+    "typing-extensions>=4.0.0",
+]
+
+[project.optional-dependencies]
+inpainting = [
+    "simple-lama-inpainting>=0.1.2",
 ]
 
 [project.urls]
