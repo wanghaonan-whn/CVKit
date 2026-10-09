@@ -77,6 +77,8 @@ class YOLOAnnotationUtils(ABC):
         return self
 
     def merge(self, other: "YOLOAnnotationUtils") -> "YOLOAnnotationUtils":
+        if type(self) is not type(other):
+            raise TypeError(f"Cannot merge {type(self).__name__} with {type(other).__name__}")
         self.labels.extend(label.copy() for label in other.labels)
         return self
 
