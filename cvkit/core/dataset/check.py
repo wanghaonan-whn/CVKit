@@ -14,48 +14,41 @@ class DatasetChecker:
     def check(self) -> DatasetCheckResult:
         result = DatasetCheckResult()
         self._check_images(result)
-        self._check_labels(result)
-        self._check_image_extensions(result)
+        self._check_orphan_images(result)
+        self._check_empty_labels(result)
+        self._check_orphan_labels(result)
         self._check_repeat_label(result)
         self._check_repeat_images(result)
         return result
 
     def _check_images(self, result: DatasetCheckResult) -> None:
         """ 检查损坏图片 """
-        for image_file in self.dataset.image_dir.iterdir():
-            if image_file.suffix.lower() != self.dataset.image_ext:
-                continue
-
+        for image_file in self.dataset.iter_images():
             image = cv2.imread(str(image_file))
             if image is None:
                 result.bad_images.append(image_file)
-                continue
 
+    def _check_orphan_images(self, result: DatasetCheckResult) -> None:
+        for image_file in self.dataset.iter_images():
             label_file = self.dataset.label_dir / f"{image_file.stem}.txt"
             if not label_file.exists():
                 result.missing_labels.append(image_file)
-                continue
 
+    def _check_empty_labels(self, result: DatasetCheckResult) -> None:
+        """ 检查空标签 """
+        for label_file in self.dataset.iter_labels():
             if YOLODetectionUtils.from_file(label_file).is_empty():
                 result.empty_labels.append(label_file)
 
-    def _check_labels(self, result: DatasetCheckResult) -> None:
+    def _check_orphan_labels(self, result: DatasetCheckResult) -> None:
         """ 检查孤儿标注 """
-        for label_file in self.dataset.label_dir.glob("*.txt"):
+        for label_file in self.dataset.iter_labels():
             image_file = self.dataset.find_image(label_file.stem)
             if image_file is None:
                 result.orphan_labels.append(label_file)
 
-    def _check_image_extensions(self, result: DatasetCheckResult) -> None:
-        """ 检查文件扩展名 """
-        for image_file in self.dataset.image_dir.iterdir():
-            if not image_file.is_file():
-                continue
-            if image_file.suffix.lower() != self.dataset.image_ext:
-                result.nonstandard_images.append(image_file)
-
     def _check_repeat_label(self, result: DatasetCheckResult) -> None:
-        for label_file in self.dataset.label_dir.glob("*.txt"):
+        for label_file in self.dataset.iter_labels():
             labels = YOLODetectionUtils.from_file(label_file).parse()
             for first_index, first_bbox in enumerate(labels):
                 for second_index in range(first_index + 1, len(labels)):
@@ -66,11 +59,7 @@ class DatasetChecker:
 
     def _check_repeat_images(self, result: DatasetCheckResult) -> None:
         seen: dict[str, Path] = {}
-        for image_file in self.dataset.image_dir.iterdir():
-            if not image_file.is_file():
-                continue
-            if image_file.suffix.lower() != self.dataset.image_ext:
-                continue
+        for image_file in self.dataset.iter_images():
             image_hash = ImageUtils.calculate_file_hash(image_file)
             if image_hash in seen:
                 result.repeat_images.append((seen[image_hash], image_file))
