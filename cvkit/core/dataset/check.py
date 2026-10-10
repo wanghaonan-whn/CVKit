@@ -39,7 +39,7 @@ class DatasetChecker:
         for image_file in tqdm(image_files, desc="Checking orphan image files"):
             label_file = self.dataset.label_dir / f"{image_file.stem}.txt"
             if not label_file.is_file():
-                result.missing_labels.append(image_file)
+                result.orphan_images.append(image_file)
 
     @staticmethod
     def _check_empty_labels(result: DatasetCheckResult, label_files: list) -> None:

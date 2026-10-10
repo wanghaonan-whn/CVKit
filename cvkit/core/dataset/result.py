@@ -13,7 +13,7 @@ class DuplicateBBoxIssue:
 @dataclass
 class DatasetCheckResult:
     bad_images: list[Path] = field(default_factory=list)
-    missing_labels: list[Path] = field(default_factory=list)
+    orphan_images: list[Path] = field(default_factory=list)
     empty_labels: list[Path] = field(default_factory=list)
     orphan_labels: list[Path] = field(default_factory=list)
     repeat_labels: list[DuplicateBBoxIssue] = field(default_factory=list)  # 标注文件、框编号、框编号、IoU
