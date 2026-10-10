@@ -3,7 +3,7 @@ from pathlib import Path
 from cvkit.core.annotation.hbb.yolo import YOLODetectionUtils
 from cvkit.core.annotation.utils import AnnotationUtils
 from cvkit.core.dataset.base import Dataset
-from cvkit.core.dataset.result import DatasetCheckResult
+from cvkit.core.dataset.result import DatasetCheckResult, DuplicateBBoxIssue
 from cvkit.core.image.utils import ImageUtils
 
 
@@ -31,31 +31,47 @@ class DatasetChecker:
     def _check_orphan_images(self, result: DatasetCheckResult) -> None:
         for image_file in self.dataset.iter_images():
             label_file = self.dataset.label_dir / f"{image_file.stem}.txt"
-            if not label_file.exists():
+            if not label_file.is_file():
                 result.missing_labels.append(image_file)
 
     def _check_empty_labels(self, result: DatasetCheckResult) -> None:
         """ 检查空标签 """
         for label_file in self.dataset.iter_labels():
-            if YOLODetectionUtils.from_file(label_file).is_empty():
+            try:
+                annotation = YOLODetectionUtils.from_file(label_file)
+            except (ValueError, OSError, UnicodeError) as exc:
+                result.invalid_labels[label_file] = str(exc)
+                continue
+
+            if annotation.is_empty():
                 result.empty_labels.append(label_file)
 
     def _check_orphan_labels(self, result: DatasetCheckResult) -> None:
         """ 检查孤儿标注 """
+        image_index = self.dataset.build_image_index()
+        result.ambiguous_images.update({stem: images for stem, images in image_index.items() if len(images) > 1})
         for label_file in self.dataset.iter_labels():
-            image_file = self.dataset.find_image(label_file.stem)
-            if image_file is None:
+            if label_file.stem not in image_index:
                 result.orphan_labels.append(label_file)
 
     def _check_repeat_label(self, result: DatasetCheckResult) -> None:
         for label_file in self.dataset.iter_labels():
+            if label_file in result.invalid_labels:
+                continue
             labels = YOLODetectionUtils.from_file(label_file).parse()
             for first_index, first_bbox in enumerate(labels):
                 for second_index in range(first_index + 1, len(labels)):
                     second_bbox = labels[second_index]
                     iou = AnnotationUtils.calculate_iou(first_bbox, second_bbox)
                     if iou >= 0.95:
-                        result.repeat_labels.append((label_file, first_index + 1, second_index + 1, iou))
+                        result.repeat_labels.append(
+                            DuplicateBBoxIssue(
+                                label_file=label_file,
+                                first_index=first_index + 1,
+                                second_index=second_index + 1,
+                                iou=iou
+                            )
+                        )
 
     def _check_repeat_images(self, result: DatasetCheckResult) -> None:
         seen: dict[str, Path] = {}

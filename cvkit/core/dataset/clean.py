@@ -12,8 +12,7 @@ class DatasetCleaner:
         if dry_run:
             return plan
         self._move_bad_images(result)
-        self._remove_empty_labels(result)
-        self._remove_orphan_labels(result)
+        self._remove_labels(result)
         return plan
 
     def _build_plan(self, result: DatasetCheckResult) -> list[str]:
@@ -22,26 +21,21 @@ class DatasetCleaner:
         for image_file in result.bad_images:
             save_path = bad_dir / image_file.name
             plan.append(f"MOVE: {image_file} -> {save_path}")
-        for label_file in result.empty_labels:
-            plan.append(f"DELETE EMPTY LABEL: {label_file}")
-        for label_file in result.orphan_labels:
-            plan.append(f"DELETE ORPHAN LABEL: {label_file}")
+        label_files = dict.fromkeys(result.empty_labels + result.orphan_labels)
+        for label_file in label_files:
+            plan.append(f"DELETE LABEL: {label_file}")
         return plan
 
     def _move_bad_images(self, result: DatasetCheckResult) -> None:
+        if not result.bad_images:
+            return
         bad_dir = self.dataset.data_dir / "images_bad"
-        bad_dir.mkdir(parents=True, exist_ok=True)
-
+        bad_dir.mkdir(parents=True, exist_ok=False)
         for image_file in result.bad_images:
-            save_path = bad_dir / image_file.name
-            shutil.move(image_file, save_path)
+            shutil.move(image_file, bad_dir / image_file.name)
 
     @staticmethod
-    def _remove_empty_labels(result: DatasetCheckResult) -> None:
-        for label_file in result.empty_labels:
-            label_file.unlink()
-
-    @staticmethod
-    def _remove_orphan_labels(result: DatasetCheckResult) -> None:
-        for label_file in result.orphan_labels:
+    def _remove_labels(result: DatasetCheckResult) -> None:
+        label_files = dict.fromkeys(result.empty_labels + result.orphan_labels)
+        for label_file in label_files:
             label_file.unlink()

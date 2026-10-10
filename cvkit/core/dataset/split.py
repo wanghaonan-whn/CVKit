@@ -17,45 +17,37 @@ class DatasetSplitter:
         if save_dir.exists():
             raise FileExistsError(f"Dir already exists: {save_dir}")
 
+        labels = sorted(self.dataset.iter_labels())
+        if not labels:
+            raise FileNotFoundError(f"No label files found in {self.dataset.label_dir}")
+        image_index = self.dataset.build_image_index()
+        pairs = []
+
+        for label_file in labels:
+            image_file = self.dataset.find_image(label_file.stem, image_index)
+            if image_file is None:
+                raise FileNotFoundError(f"Image not found: {label_file.stem}")
+            pairs.append((image_file, label_file))
+
+        rng = random.Random(seed)
+        rng.shuffle(pairs)
+        num_train = int(len(pairs) * ratio)
         img_train_dir = save_dir / "train" / "images"
         label_train_dir = save_dir / "train" / "labels"
         img_val_dir = save_dir / "val" / "images"
         label_val_dir = save_dir / "val" / "labels"
-
         for save_path in (img_train_dir, label_train_dir, img_val_dir, label_val_dir):
             save_path.mkdir(parents=True, exist_ok=True)
 
-        labels = sorted(self.dataset.label_dir.glob("*.txt"))
-
-        if not labels:
-            raise FileNotFoundError(f"No label files found in {self.dataset.label_dir}")
-
-        rng = random.Random(seed)
-        rng.shuffle(labels)
-        num_train = int(len(labels) * ratio)
-
-        train_labels = labels[:num_train]
-        val_labels = labels[num_train:]
-        tasks = []
-
-        for label_file in train_labels:
-            tasks.append((label_file, img_train_dir, label_train_dir))
-
-        for label_file in val_labels:
-            tasks.append((label_file, img_val_dir, label_val_dir))
+        tasks = [(image, label, img_train_dir, label_train_dir) for image, label in pairs[:num_train]]
+        tasks.extend((image, label, img_val_dir, label_val_dir) for image, label in pairs[num_train:])
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [
-                executor.submit(self._copy_one, label_file, img_save_dir, label_save_dir)
-                for label_file, img_save_dir, label_save_dir in tasks
-            ]
+            futures = [executor.submit(self._copy_one, *task) for task in tasks]
             for future in futures:
                 future.result()
 
-    def _copy_one(self, label_file: Path, img_save_dir: Path, label_save_dir: Path) -> None:
-        image_file = self.dataset.find_image(label_file.stem)
-        if image_file is None:
-            raise FileNotFoundError(f"Image not found: {label_file.stem}")
-
-        shutil.copy2(label_file, label_save_dir / label_file.name)
+    @staticmethod
+    def _copy_one(image_file: Path, label_file: Path, img_save_dir: Path, label_save_dir: Path) -> None:
         shutil.copy2(image_file, img_save_dir / image_file.name)
+        shutil.copy2(label_file, label_save_dir / label_file.name)
