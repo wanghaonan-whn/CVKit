@@ -109,13 +109,13 @@ class DatasetTestCase(unittest.TestCase):
         orphan_label = self.write_label(dataset.label_dir / "orphan.txt")
 
         with patch(
-                "cvkit.core.dataset.check.tqdm",
+                "cvkit.core.dataset.check.iter_progress",
                 side_effect=lambda iterable, **_: iterable,
         ):
             result = DatasetChecker(dataset).check()
 
         self.assertEqual(result.bad_images, [bad])
-        self.assertEqual(result.missing_labels, [missing_label])
+        self.assertEqual(result.orphan_images, [missing_label])
         self.assertEqual(result.empty_labels, [empty_label])
         self.assertEqual(result.orphan_labels, [orphan_label])
         self.assertEqual(set(result.invalid_labels), {invalid_label})
