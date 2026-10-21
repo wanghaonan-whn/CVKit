@@ -108,11 +108,7 @@ class DatasetTestCase(unittest.TestCase):
         self.write_label(dataset.label_dir / "ambiguous.txt")
         orphan_label = self.write_label(dataset.label_dir / "orphan.txt")
 
-        with patch(
-                "cvkit.core.dataset.check.iter_progress",
-                side_effect=lambda iterable, **_: iterable,
-        ):
-            result = DatasetChecker(dataset).check()
+        result = DatasetChecker(dataset).check()
 
         self.assertEqual(result.bad_images, [bad])
         self.assertEqual(result.orphan_images, [missing_label])

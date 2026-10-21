@@ -4,7 +4,6 @@ from pathlib import Path
 from cvkit.core.annotation.hbb.yolo import YOLODetectionUtils
 from cvkit.core.annotation.utils import AnnotationUtils
 from cvkit.core.dataset.base import Dataset
-from cvkit.core.dataset.progress import iter_progress
 from cvkit.core.dataset.result import DatasetCheckResult, DuplicateBBoxIssue
 from cvkit.core.image.utils import ImageUtils
 
@@ -29,13 +28,13 @@ class DatasetChecker:
     @staticmethod
     def _check_images(result: DatasetCheckResult, image_files: list) -> None:
         """ 检查损坏图片 """
-        for image_file in iter_progress(image_files, step=1, label="检查图片"):
+        for image_file in image_files:
             image = cv2.imread(str(image_file))
             if image is None:
                 result.bad_images.append(image_file)
 
     def _check_orphan_images(self, result: DatasetCheckResult, image_files: list) -> None:
-        for image_file in iter_progress(image_files, step=2, label="检查缺失标注"):
+        for image_file in image_files:
             label_file = self.dataset.label_dir / f"{image_file.stem}.txt"
             if not label_file.is_file():
                 result.orphan_images.append(image_file)
@@ -43,7 +42,7 @@ class DatasetChecker:
     @staticmethod
     def _check_empty_labels(result: DatasetCheckResult, label_files: list) -> None:
         """ 检查空标签 """
-        for label_file in iter_progress(label_files, step=3, label="检查标注格式与空标注"):
+        for label_file in label_files:
             try:
                 annotation = YOLODetectionUtils.from_file(label_file)
             except (ValueError, OSError, UnicodeError) as exc:
@@ -60,13 +59,13 @@ class DatasetChecker:
         for image_file in image_files:
             image_index.setdefault(image_file.stem, []).append(image_file)
         result.ambiguous_images.update({stem: images for stem, images in image_index.items() if len(images) > 1})
-        for label_file in iter_progress(label_files, step=4, label="检查孤儿标注"):
+        for label_file in label_files:
             if label_file.stem not in image_index:
                 result.orphan_labels.append(label_file)
 
     @staticmethod
     def _check_repeat_label(result: DatasetCheckResult, label_files: list) -> None:
-        for label_file in iter_progress(label_files, step=5, label="检查重复框"):
+        for label_file in label_files:
             if label_file in result.invalid_labels:
                 continue
             labels = YOLODetectionUtils.from_file(label_file).parse()
@@ -87,7 +86,7 @@ class DatasetChecker:
     @staticmethod
     def _check_repeat_images(result: DatasetCheckResult, image_files: list) -> None:
         seen: dict[str, Path] = {}
-        for image_file in iter_progress(image_files, step=6, label="检查重复图片"):
+        for image_file in image_files:
             image_hash = ImageUtils.calculate_file_hash(image_file)
             if image_hash in seen:
                 result.repeat_images.append((seen[image_hash], image_file))
