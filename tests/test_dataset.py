@@ -14,6 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from cvkit.dataset import (
+    CleanType,
     Dataset,
     DatasetChecker,
     DatasetCleaner,
@@ -127,10 +128,11 @@ class DatasetTestCase(unittest.TestCase):
         self.assertEqual(len(result.repeat_images), 1)
         self.assertEqual(set(result.repeat_images[0]), {valid, duplicate})
 
-    def test_cleaner_dry_run_does_not_modify_files(self) -> None:
+    def test_cleaner_builds_plan_without_modifying_files(self) -> None:
         dataset = self.make_dataset()
         bad = dataset.image_dir / "bad.jpg"
         bad.write_bytes(b"bad")
+        bad_label = self.write_label(dataset.label_dir / "bad.txt")
         empty = self.write_label(dataset.label_dir / "empty.txt", "")
         orphan = self.write_label(dataset.label_dir / "orphan.txt")
         result = DatasetCheckResult(
@@ -139,20 +141,24 @@ class DatasetTestCase(unittest.TestCase):
             orphan_labels=[empty, orphan],
         )
 
-        plan = DatasetCleaner(dataset).clean(result, dry_run=True)
+        cleaner = DatasetCleaner(dataset)
+        plan = cleaner.build_plan(result)
+        bad_moves = cleaner.clean(plan, CleanType.BAD_IMAGES, dry_run=True)
 
-        self.assertEqual(len(plan), 3)
-        self.assertTrue(any(item.startswith("MOVE:") for item in plan))
-        self.assertEqual(sum(item.startswith("DELETE LABEL:") for item in plan), 2)
+        self.assertEqual(set(bad_moves), {bad, bad_label})
+        self.assertEqual(plan[CleanType.EMPTY_LABELS], {})
+        self.assertEqual(set(plan[CleanType.ORPHAN_LABELS]), {empty, orphan})
         self.assertTrue(bad.exists())
+        self.assertTrue(bad_label.exists())
         self.assertTrue(empty.exists())
         self.assertTrue(orphan.exists())
-        self.assertFalse((dataset.data_dir / "images_bad").exists())
+        self.assertFalse((dataset.data_dir / "quarantine").exists())
 
-    def test_cleaner_moves_bad_images_and_removes_labels(self) -> None:
+    def test_cleaner_moves_selected_categories_to_quarantine(self) -> None:
         dataset = self.make_dataset()
         bad = dataset.image_dir / "bad.jpg"
         bad.write_bytes(b"bad")
+        bad_label = self.write_label(dataset.label_dir / "bad.txt")
         empty = self.write_label(dataset.label_dir / "empty.txt", "")
         orphan = self.write_label(dataset.label_dir / "orphan.txt")
         result = DatasetCheckResult(
@@ -161,12 +167,45 @@ class DatasetTestCase(unittest.TestCase):
             orphan_labels=[empty, orphan],
         )
 
-        DatasetCleaner(dataset).clean(result, dry_run=False)
+        cleaner = DatasetCleaner(dataset)
+        plan = cleaner.build_plan(result)
+        cleaner.clean(plan, CleanType.BAD_IMAGES, dry_run=False)
+        cleaner.clean(plan, CleanType.EMPTY_LABELS, dry_run=False)
+        cleaner.clean(plan, CleanType.ORPHAN_LABELS, dry_run=False)
 
         self.assertFalse(bad.exists())
-        self.assertEqual((dataset.data_dir / "images_bad" / bad.name).read_bytes(), b"bad")
+        self.assertFalse(bad_label.exists())
         self.assertFalse(empty.exists())
         self.assertFalse(orphan.exists())
+        quarantine = dataset.data_dir / "quarantine"
+        self.assertEqual(
+            (quarantine / "bad_images" / "images" / bad.name).read_bytes(),
+            b"bad",
+        )
+        self.assertTrue((quarantine / "bad_images" / "labels" / bad_label.name).is_file())
+        self.assertTrue((quarantine / "orphan_labels" / "labels" / empty.name).is_file())
+        self.assertTrue((quarantine / "orphan_labels" / "labels" / orphan.name).is_file())
+
+    def test_cleaner_moves_repeated_image_with_its_label(self) -> None:
+        dataset = self.make_dataset()
+        original = self.write_image(dataset.image_dir / "original.jpg", 10)
+        duplicate = self.write_image(dataset.image_dir / "duplicate.jpg", 10)
+        original_label = self.write_label(dataset.label_dir / "original.txt")
+        duplicate_label = self.write_label(dataset.label_dir / "duplicate.txt")
+        result = DatasetCheckResult(repeat_images=[(original, duplicate)])
+
+        cleaner = DatasetCleaner(dataset)
+        plan = cleaner.build_plan(result)
+        moves = cleaner.clean(plan, "repeat_images", dry_run=False)
+
+        self.assertEqual(set(moves), {duplicate, duplicate_label})
+        self.assertTrue(original.is_file())
+        self.assertTrue(original_label.is_file())
+        self.assertFalse(duplicate.exists())
+        self.assertFalse(duplicate_label.exists())
+        quarantine = dataset.data_dir / "quarantine" / "repeat_images"
+        self.assertTrue((quarantine / "images" / duplicate.name).is_file())
+        self.assertTrue((quarantine / "labels" / duplicate_label.name).is_file())
 
     def test_statistics_counts_files_classes_and_images_per_class(self) -> None:
         dataset = self.make_dataset()
